@@ -25,6 +25,45 @@ body {
   background: transparent;
 }
 
+/* Main menu selector (Task 02). The triangles mount on the selected item, so
+   `selector-twitch` is a brief scale-in entrance that replays on each selection
+   change; `selector-idle` is the perpetual low-frequency wobble underneath. */
+@keyframes selector-twitch {
+  0% {
+    transform: scale(0.82) rotate(-3deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes selector-idle {
+  0%,
+  100% {
+    transform: rotate(-1.5deg) skewX(-1deg);
+  }
+  50% {
+    transform: rotate(1.5deg) skewX(1deg);
+  }
+}
+
+/* Honour reduced-motion: drop the twitch/idle wobble and let the selector snap
+   into place instantly, matching how the P3R background freezes its animation. */
+@media (prefers-reduced-motion: reduce) {
+  [data-menu-selector] {
+    transition: none !important;
+  }
+  [data-menu-selector] * {
+    animation: none !important;
+  }
+}
+
 body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
