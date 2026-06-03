@@ -243,3 +243,40 @@ export const darkGradientFrag = /* glsl */ `
     gl_FragColor = vec4(darkNavy, alpha);
   }
 `
+
+// Layer 8 — Light gradient. The final layer and the additive counterpart to
+// Layer 7. Same bottom-right -> top-left diagonal, but it adds a soft teal-cyan
+// glow to the top-left corner instead of darkening the bottom-right. With
+// AdditiveBlending it can only brighten: where transparent it has zero effect.
+// The first gradient stop sits at offset 0.468, so the bottom-right ~half of the
+// diagonal is fully transparent; from there the colour ramps from periwinkle blue
+// toward bright teal while alpha rises 0 -> 39.2%. Output is premultiplied
+// (col * alpha) to match THREE.AdditiveBlending's GL_SRC_ALPHA, GL_ONE. The blue
+// transparent end only shapes the interpolation path; it adds no brightness.
+// Direct port of the GradientTexture2D from docs/layer8.md (linear approximation
+// of the OKLab interpolation).
+export const lightGradientFrag = /* glsl */ `
+  precision highp float;
+
+  varying vec2 vUv;
+
+  void main() {
+    // gradPos = 0 at bottom-right (vUv 1,1), gradPos = 1 at top-left (vUv 0,0).
+    float gradPos = 1.0 - (vUv.x + vUv.y) * 0.5;
+
+    // Before the first stop (offset 0.468) the gradient is fully transparent —
+    // additive contribution is zero, so the whole bottom-right half is untouched.
+    if (gradPos < 0.468) {
+      gl_FragColor = vec4(0.0);
+      return;
+    }
+
+    // Remap 0.468 -> 1.0 into 0.0 -> 1.0, then ramp both colour and alpha.
+    float t = (gradPos - 0.468) / 0.532;
+    float alpha = mix(0.0, 0.392, t);
+    vec3 col = mix(vec3(0.282, 0.427, 0.867), vec3(0.0, 0.988, 0.949), t);
+
+    // Premultiply for additive blending (src.rgb * src.alpha + dst.rgb).
+    gl_FragColor = vec4(col * alpha, alpha);
+  }
+`

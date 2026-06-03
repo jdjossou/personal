@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
 import { bakeBubblesTexture, bakeCaustic2PatternTexture, bakePatternTexture } from './noise'
-import { caustic1Frag, caustic2Frag, colorMapFrag, darkGradientFrag, distortionFrag, fullscreenVert, gaussianBlurFrag } from './shaders'
+import { caustic1Frag, caustic2Frag, colorMapFrag, darkGradientFrag, distortionFrag, fullscreenVert, gaussianBlurFrag, lightGradientFrag } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -191,6 +191,19 @@ export function useP3RBackground(
       depthWrite: false,
     })
 
+    // Layer 8: Light gradient — the additive counterpart to Layer 7. A static,
+    // UV-based diagonal gradient adding a soft teal-cyan glow to the top-left
+    // corner (transparent across the bottom-right half). Additive blending means
+    // it can only brighten the composite, never darken it. No uniforms.
+    const lightGradientMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: lightGradientFrag,
+      transparent: true,
+      blending: THREE.AdditiveBlending, // can only brighten the frame
+      depthTest: false,
+      depthWrite: false,
+    })
+
     function renderPass(
       material: THREE.Material,
       target: THREE.WebGLRenderTarget | null
@@ -231,6 +244,7 @@ export function useP3RBackground(
       renderPass(blurMaterial, null) // Layer 6 -> Gaussian blur to screen
       renderer.autoClear = false
       renderPass(darkGradientMaterial, null) // Layer 7 -> vignette over blur
+      renderPass(lightGradientMaterial, null) // Layer 8 -> additive teal glow
       renderer.autoClear = true
     }
     tick()
@@ -247,6 +261,7 @@ export function useP3RBackground(
       caustic2Material.dispose()
       blurMaterial.dispose()
       darkGradientMaterial.dispose()
+      lightGradientMaterial.dispose()
       rtA.dispose()
       rtB.dispose()
       gradient.dispose()
