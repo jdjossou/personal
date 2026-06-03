@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { bakeGradientTexture } from './gradient'
+import { colorMapFrag, fullscreenVert } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -21,12 +23,21 @@ export function useP3RBackground(
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
 
     const geometry = new THREE.PlaneGeometry(2, 2)
-    // Deep navy: (0.024, 0.039, 0.169) from P3R color_mapping gradient stop 0
-    const material = new THREE.MeshBasicMaterial({ color: 0x060a2b })
+    // Layer 1: luminance of procedural FBM noise -> 1D blue gradient LUT.
+    const gradient = bakeGradientTexture()
+    const material = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: colorMapFrag,
+      uniforms: {
+        uGradient: { value: gradient },
+        uAspect: { value: window.innerWidth / window.innerHeight },
+      },
+    })
     scene.add(new THREE.Mesh(geometry, material))
 
     function onResize() {
       renderer.setSize(window.innerWidth, window.innerHeight)
+      material.uniforms.uAspect.value = window.innerWidth / window.innerHeight
     }
     window.addEventListener('resize', onResize)
 
@@ -41,6 +52,7 @@ export function useP3RBackground(
       window.removeEventListener('resize', onResize)
       geometry.dispose()
       material.dispose()
+      gradient.dispose()
       renderer.dispose()
     }
   }, [canvasRef])
