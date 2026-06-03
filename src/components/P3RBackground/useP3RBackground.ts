@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
-import { bakeBubblesTexture, bakePatternTexture } from './noise'
-import { caustic1Frag, colorMapFrag, distortionFrag, fullscreenVert } from './shaders'
+import { bakeBubblesTexture, bakeCaustic2PatternTexture, bakePatternTexture } from './noise'
+import { caustic1Frag, caustic2Frag, colorMapFrag, distortionFrag, fullscreenVert } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -113,6 +113,51 @@ export function useP3RBackground(
       },
     })
 
+    // Layer 5: Caustic2 — denser, brighter caustic bands confined to a 512×512
+    // panel in the upper-right. A simplified Caustic1 (no bubbles) fed by a much
+    // lower-frequency Perlin texture and a hand-painted caustic-band mask.
+    const caustic2Pattern = bakeCaustic2PatternTexture()
+    const caustic2Mask = new THREE.TextureLoader().load(
+      '/assets/textures/caustic_2_mask.png'
+    )
+    caustic2Mask.colorSpace = THREE.NoColorSpace // greyscale gate, not colour
+    caustic2Mask.wrapS = THREE.ClampToEdgeWrapping
+    caustic2Mask.wrapT = THREE.ClampToEdgeWrapping
+    caustic2Mask.minFilter = THREE.LinearFilter
+    caustic2Mask.magFilter = THREE.LinearFilter
+
+    const caustic2Material = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: caustic2Frag,
+      transparent: true,
+      blending: THREE.AdditiveBlending, // can only brighten the frame
+      depthTest: false,
+      depthWrite: false,
+      uniforms: {
+        uPatternTexture: { value: caustic2Pattern },
+        uMaskTexture: { value: caustic2Mask },
+        uColor: { value: new THREE.Vector4(0.587, 0.888, 0.939, 0.471) },
+        uVelocityMain: { value: new THREE.Vector2(0.0, -0.1) },
+        uVelocitySecond: { value: new THREE.Vector2(0.0, 0.25) },
+        uScaleMain: { value: new THREE.Vector2(1.0, 1.0) },
+        uScaleSecond: { value: new THREE.Vector2(1.0, 2.0) },
+        uCut: { value: 0.48 },
+        uTime: { value: 0 },
+      },
+    })
+
+    // Unlike the other layers this is not full-screen. fullscreenVert passes
+    // vertex positions straight through as clip coords (ignoring camera/model
+    // matrices), so the panel's placement is baked into the geometry vertices.
+    // On a 1920×1080 reference that's 960 px/NDC-unit X, 540 px/NDC-unit Y:
+    // right edge 176px from the right, top edge 16px above the frame.
+    const caustic2Geometry = new THREE.PlaneGeometry(512 / 960, 512 / 540)
+    caustic2Geometry.translate(0.55, 0.5556, 0)
+    const caustic2Mesh = new THREE.Mesh(caustic2Geometry, caustic2Material)
+    // Its own scene so it isn't drawn during the full-screen passScene passes.
+    const panelScene = new THREE.Scene()
+    panelScene.add(caustic2Mesh)
+
     function renderPass(
       material: THREE.Material,
       target: THREE.WebGLRenderTarget | null
@@ -136,6 +181,7 @@ export function useP3RBackground(
       const elapsed = timer.getElapsed()
       distortionMaterial.uniforms.uTime.value = elapsed
       caustic1Material.uniforms.uTime.value = elapsed
+      caustic2Material.uniforms.uTime.value = elapsed
 
       renderPass(colorMapMaterial, rtA) // Layer 1 -> off-screen
       distortionMaterial.uniforms.uPreviousPass.value = rtA.texture
@@ -143,6 +189,8 @@ export function useP3RBackground(
       renderer.autoClear = false
       renderPass(tintMaterial, null) // Layer 3 -> composited over screen
       renderPass(caustic1Material, null) // Layer 4 -> additive caustics/bubbles
+      renderer.setRenderTarget(null)
+      renderer.render(panelScene, camera) // Layer 5 -> additive top-right panel
       renderer.autoClear = true
     }
     tick()
@@ -155,12 +203,16 @@ export function useP3RBackground(
       distortionMaterial.dispose()
       tintMaterial.dispose()
       caustic1Material.dispose()
+      caustic2Geometry.dispose()
+      caustic2Material.dispose()
       rtA.dispose()
       gradient.dispose()
       patternTexture.dispose()
       bubblesTexture.dispose()
       bubblesMask.dispose()
       patternMask.dispose()
+      caustic2Pattern.dispose()
+      caustic2Mask.dispose()
       renderer.dispose()
     }
   }, [canvasRef])

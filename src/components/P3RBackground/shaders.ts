@@ -131,3 +131,39 @@ export const caustic1Frag = /* glsl */ `
     gl_FragColor = vec4(uColor.rgb, (bPattern1 + bPattern2) * uColor.a);
   }
 `
+
+// Layer 5 — Caustic2. A simplified Caustic1: the same dual-noise convergence
+// (step(cut, mask - abs(p1 - p2))) but with no bubble system, a denser threshold
+// (0.48), brighter output, and a much lower-frequency Perlin noise so features are
+// very large. Rendered into a 512×512 panel anchored top-right, not full-screen.
+// Ported from caustics_canvas.gdshader (docs/layer5.md).
+export const caustic2Frag = /* glsl */ `
+  precision highp float;
+
+  uniform sampler2D uPatternTexture;
+  uniform sampler2D uMaskTexture;
+
+  uniform vec4 uColor;
+  uniform vec2 uVelocityMain;
+  uniform vec2 uVelocitySecond;
+  uniform vec2 uScaleMain;
+  uniform vec2 uScaleSecond;
+  uniform float uCut;
+  uniform float uTime;
+
+  varying vec2 vUv;
+
+  void main() {
+    // Snap time to 6 discrete steps/sec — same updates_per_second as Caustic1.
+    float t = floor(uTime * 6.0) / 6.0;
+
+    float p1 = texture2D(uPatternTexture, uScaleMain * vUv + uVelocityMain * t).r;
+    float p2 = texture2D(uPatternTexture, uScaleSecond * vUv + 0.5 + uVelocitySecond * t).r;
+    float mask = texture2D(uMaskTexture, vUv).r;
+
+    // Caustic bands: bright where the painted mask allows AND the two noise
+    // layers agree. Denser cut (0.48) → wide, blotchy fill, not sparse streaks.
+    float pattern = step(uCut, mask - abs(p1 - p2));
+    gl_FragColor = vec4(uColor.rgb, pattern * uColor.a);
+  }
+`

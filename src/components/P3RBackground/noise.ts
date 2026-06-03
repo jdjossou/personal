@@ -177,6 +177,21 @@ export function bakePatternTexture(): THREE.DataTexture {
   )
 }
 
+// Caustic2 (Layer 5) pattern_texture — very low-frequency Perlin (4 octaves).
+// The Godot source uses frequency 0.0023 (vs Caustic1's ~0.01), giving features
+// so large a single hill fills the 512px panel. Period is the integer-lattice
+// analogue; kept small + integer because seamless wrapping requires integer
+// periods (gradAt wraps modulo period). Tune by eye like PATTERN_PERIOD was.
+const CAUSTIC2_PERIOD = 2
+const CAUSTIC2_OCTAVES = 4
+
+export function bakeCaustic2PatternTexture(): THREE.DataTexture {
+  return bakeField(
+    (u, v) => fbmPerlin(u, v, CAUSTIC2_PERIOD, CAUSTIC2_OCTAVES, 42),
+    TEXTURE_SIZE
+  )
+}
+
 // Caustic1 bubbles_texture — Voronoi cell-edge noise (F1), 4 octaves.
 export function bakeBubblesTexture(): THREE.DataTexture {
   return bakeField(
