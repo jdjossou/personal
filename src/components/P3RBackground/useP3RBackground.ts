@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { bakeGradientTexture } from './gradient'
-import { colorMapFrag, fullscreenVert } from './shaders'
+import { colorMapFrag, distortionFrag, fullscreenVert } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -18,14 +18,29 @@ export function useP3RBackground(
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setPixelRatio(window.devicePixelRatio)
 
-    const scene = new THREE.Scene()
+    const timer = new THREE.Timer()
+
     // Orthographic camera covers the [-1,1]×[-1,1] clip space — standard fullscreen quad setup
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
 
-    const geometry = new THREE.PlaneGeometry(2, 2)
+    // One shared fullscreen quad whose material is swapped per pass.
+    const quadGeometry = new THREE.PlaneGeometry(2, 2)
+    const quadMesh = new THREE.Mesh(quadGeometry)
+    const passScene = new THREE.Scene()
+    passScene.add(quadMesh)
+
+    // Off-screen target so distortion (Layer 2) can resample Layer 1's output.
+    // Sized to the drawing buffer so it tracks devicePixelRatio. Default
+    // UnsignedByte/RGBA/LinearFilter preserves the raw byte pass-through look.
+    const size = renderer.getDrawingBufferSize(new THREE.Vector2())
+    const makeRT = () =>
+      new THREE.WebGLRenderTarget(size.x, size.y, { depthBuffer: false, stencilBuffer: false })
+    const rtA = makeRT()
+    // A second target (rtB) gets introduced for ping-pong once layers 3+ land.
+
     // Layer 1: luminance of procedural FBM noise -> 1D blue gradient LUT.
     const gradient = bakeGradientTexture()
-    const material = new THREE.ShaderMaterial({
+    const colorMapMaterial = new THREE.ShaderMaterial({
       vertexShader: fullscreenVert,
       fragmentShader: colorMapFrag,
       uniforms: {
@@ -33,25 +48,54 @@ export function useP3RBackground(
         uAspect: { value: window.innerWidth / window.innerHeight },
       },
     })
-    scene.add(new THREE.Mesh(geometry, material))
+
+    // Layer 2: sine distortion — pure UV warp of the previous pass.
+    const distortionMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: distortionFrag,
+      uniforms: {
+        uPreviousPass: { value: null },
+        uTime: { value: 0 },
+        uAmplitude: { value: 0.02 },
+        uSpeed: { value: 0.5 },
+        uWaveLength: { value: 0.08 },
+      },
+    })
+
+    function renderPass(
+      material: THREE.ShaderMaterial,
+      target: THREE.WebGLRenderTarget | null
+    ) {
+      quadMesh.material = material
+      renderer.setRenderTarget(target)
+      renderer.render(passScene, camera)
+    }
 
     function onResize() {
       renderer.setSize(window.innerWidth, window.innerHeight)
-      material.uniforms.uAspect.value = window.innerWidth / window.innerHeight
+      const s = renderer.getDrawingBufferSize(new THREE.Vector2())
+      rtA.setSize(s.x, s.y)
+      colorMapMaterial.uniforms.uAspect.value = window.innerWidth / window.innerHeight
     }
     window.addEventListener('resize', onResize)
 
     function tick() {
       frameIdRef.current = requestAnimationFrame(tick)
-      renderer.render(scene, camera)
+      distortionMaterial.uniforms.uTime.value = timer.getElapsed()
+
+      renderPass(colorMapMaterial, rtA) // Layer 1 -> off-screen
+      distortionMaterial.uniforms.uPreviousPass.value = rtA.texture
+      renderPass(distortionMaterial, null) // Layer 2 -> screen
     }
     tick()
 
     return () => {
       cancelAnimationFrame(frameIdRef.current)
       window.removeEventListener('resize', onResize)
-      geometry.dispose()
-      material.dispose()
+      quadGeometry.dispose()
+      colorMapMaterial.dispose()
+      distortionMaterial.dispose()
+      rtA.dispose()
       gradient.dispose()
       renderer.dispose()
     }

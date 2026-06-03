@@ -56,3 +56,26 @@ export const colorMapFrag = /* glsl */ `
     gl_FragColor = texture2D(uGradient, vec2(luma, 0.0));
   }
 `
+
+// Layer 2 — sine distortion. Pure UV warp: resamples the previous pass with a
+// Y-only displacement driven by a slow horizontal sine wave. Produces no color
+// of its own. Ported from distortion.gdshader (docs/layer2.md).
+export const distortionFrag = /* glsl */ `
+  precision highp float;
+
+  uniform sampler2D uPreviousPass;
+  uniform float uTime;
+  uniform float uAmplitude;
+  uniform float uSpeed;
+  uniform float uWaveLength;
+
+  varying vec2 vUv;
+
+  void main() {
+    // Inset the readable area by uAmplitude on all sides so the Y displacement
+    // below can never sample off-edge (no clamp() needed — see docs/layer2.md).
+    vec2 scaledUv = vec2(uAmplitude) + vUv * (1.0 - uAmplitude * 2.0);
+    float wave = sin(vUv.x / uWaveLength + uTime * uSpeed) * uAmplitude;
+    gl_FragColor = texture2D(uPreviousPass, scaledUv + vec2(0.0, wave));
+  }
+`
