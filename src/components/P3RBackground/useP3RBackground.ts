@@ -62,8 +62,19 @@ export function useP3RBackground(
       },
     })
 
+    // Layer 3: cyan tint — solid color composited over the distorted image to
+    // unify the palette toward P3R's saturated "underwater" blue.
+    const tintMaterial = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0x007fd2), // sRGB cyan (doc's display-ready hex)
+      transparent: true,
+      opacity: 210 / 255, // ≈ 0.824 — faithful to docs/layer3.md
+      blending: THREE.NormalBlending,
+      depthTest: false,
+      depthWrite: false,
+    })
+
     function renderPass(
-      material: THREE.ShaderMaterial,
+      material: THREE.Material,
       target: THREE.WebGLRenderTarget | null
     ) {
       quadMesh.material = material
@@ -81,11 +92,15 @@ export function useP3RBackground(
 
     function tick() {
       frameIdRef.current = requestAnimationFrame(tick)
+      timer.update() // advance the Timer; getElapsed() only moves after update()
       distortionMaterial.uniforms.uTime.value = timer.getElapsed()
 
       renderPass(colorMapMaterial, rtA) // Layer 1 -> off-screen
       distortionMaterial.uniforms.uPreviousPass.value = rtA.texture
       renderPass(distortionMaterial, null) // Layer 2 -> screen
+      renderer.autoClear = false
+      renderPass(tintMaterial, null) // Layer 3 -> composited over screen
+      renderer.autoClear = true
     }
     tick()
 
@@ -95,6 +110,7 @@ export function useP3RBackground(
       quadGeometry.dispose()
       colorMapMaterial.dispose()
       distortionMaterial.dispose()
+      tintMaterial.dispose()
       rtA.dispose()
       gradient.dispose()
       renderer.dispose()
