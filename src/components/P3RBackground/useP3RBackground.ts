@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { bakeGradientTexture } from './gradient'
-import { colorMapFrag, distortionFrag, fullscreenVert } from './shaders'
+import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
+import { bakeBubblesTexture, bakePatternTexture } from './noise'
+import { caustic1Frag, colorMapFrag, distortionFrag, fullscreenVert } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -73,6 +74,45 @@ export function useP3RBackground(
       depthWrite: false,
     })
 
+    // Layer 4: Caustic1 — additive teal caustics + Voronoi bubble outlines.
+    // Two scrolling noise textures (baked once) plus two masks: the hand-painted
+    // horizon PNG (gates caustics to the "sky") and a vertical bubbles gradient.
+    const patternTexture = bakePatternTexture()
+    const bubblesTexture = bakeBubblesTexture()
+    const bubblesMask = bakeBubblesMaskTexture()
+    const patternMask = new THREE.TextureLoader().load(
+      '/assets/textures/caustic_1_mask.png'
+    )
+    patternMask.colorSpace = THREE.NoColorSpace // greyscale gate, not colour
+    patternMask.wrapS = THREE.ClampToEdgeWrapping
+    patternMask.wrapT = THREE.ClampToEdgeWrapping
+    patternMask.minFilter = THREE.LinearFilter
+    patternMask.magFilter = THREE.LinearFilter
+
+    const caustic1Material = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: caustic1Frag,
+      transparent: true,
+      blending: THREE.AdditiveBlending, // can only brighten the frame
+      depthTest: false,
+      depthWrite: false,
+      uniforms: {
+        uPatternTexture: { value: patternTexture },
+        uPatternMaskTexture: { value: patternMask },
+        uBubblesTexture: { value: bubblesTexture },
+        uBubblesMaskTexture: { value: bubblesMask },
+        uColor: { value: new THREE.Vector4(0.331, 0.929, 0.919, 0.255) },
+        uVelocityMain: { value: new THREE.Vector2(0.0, -0.07) },
+        uVelocitySecond: { value: new THREE.Vector2(0.0, 0.1) },
+        uVelocityBubbles: { value: new THREE.Vector2(0.0, 0.13) },
+        uScaleMain: { value: new THREE.Vector2(0.5, 0.5) },
+        uScaleSecond: { value: new THREE.Vector2(1.0, 4.0) },
+        uScaleBubbles: { value: new THREE.Vector2(1.6, 0.9) },
+        uCut: { value: 0.79 },
+        uTime: { value: 0 },
+      },
+    })
+
     function renderPass(
       material: THREE.Material,
       target: THREE.WebGLRenderTarget | null
@@ -93,13 +133,16 @@ export function useP3RBackground(
     function tick() {
       frameIdRef.current = requestAnimationFrame(tick)
       timer.update() // advance the Timer; getElapsed() only moves after update()
-      distortionMaterial.uniforms.uTime.value = timer.getElapsed()
+      const elapsed = timer.getElapsed()
+      distortionMaterial.uniforms.uTime.value = elapsed
+      caustic1Material.uniforms.uTime.value = elapsed
 
       renderPass(colorMapMaterial, rtA) // Layer 1 -> off-screen
       distortionMaterial.uniforms.uPreviousPass.value = rtA.texture
       renderPass(distortionMaterial, null) // Layer 2 -> screen
       renderer.autoClear = false
       renderPass(tintMaterial, null) // Layer 3 -> composited over screen
+      renderPass(caustic1Material, null) // Layer 4 -> additive caustics/bubbles
       renderer.autoClear = true
     }
     tick()
@@ -111,8 +154,13 @@ export function useP3RBackground(
       colorMapMaterial.dispose()
       distortionMaterial.dispose()
       tintMaterial.dispose()
+      caustic1Material.dispose()
       rtA.dispose()
       gradient.dispose()
+      patternTexture.dispose()
+      bubblesTexture.dispose()
+      bubblesMask.dispose()
+      patternMask.dispose()
       renderer.dispose()
     }
   }, [canvasRef])

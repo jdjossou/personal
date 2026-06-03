@@ -79,3 +79,55 @@ export const distortionFrag = /* glsl */ `
     gl_FragColor = texture2D(uPreviousPass, scaledUv + vec2(0.0, wave));
   }
 `
+
+// Layer 4 — Caustic1. The primary animated layer: glowing teal caustic streaks
+// plus Voronoi "bubble" outlines, composited additively over the tinted base.
+// Ported from bubbles_caustics_canvas.gdshader (docs/layer4.md).
+//
+// Two transforms of the same scrolling Simplex pattern are differenced — the
+// pixels where they nearly agree (abs small) inside the "sky" mask become the
+// caustic lines. The Voronoi map fills the gaps with bubble outlines, gated by a
+// vertical mask. All three samples share a 6 fps discrete time step
+// (floor(uTime*6)/6), which gives P3R's choppy, print-like shimmer. Output is the
+// flat teal colour with a binary alpha; AdditiveBlending turns it into glow.
+export const caustic1Frag = /* glsl */ `
+  precision highp float;
+
+  uniform sampler2D uPatternTexture;
+  uniform sampler2D uPatternMaskTexture;
+  uniform sampler2D uBubblesTexture;
+  uniform sampler2D uBubblesMaskTexture;
+
+  uniform vec4 uColor;
+  uniform vec2 uVelocityMain;
+  uniform vec2 uVelocitySecond;
+  uniform vec2 uVelocityBubbles;
+  uniform vec2 uScaleMain;
+  uniform vec2 uScaleSecond;
+  uniform vec2 uScaleBubbles;
+  uniform float uCut;
+  uniform float uTime;
+
+  varying vec2 vUv;
+
+  void main() {
+    // Snap time to 6 discrete steps/sec — the source's updates_per_second.
+    float t = floor(uTime * 6.0) / 6.0;
+
+    float p1 = texture2D(uPatternTexture, uScaleMain * vUv + uVelocityMain * t).r;
+    float p2 = texture2D(uPatternTexture, uScaleSecond * vUv + 0.5 + uVelocitySecond * t).r;
+    float bubbles = texture2D(uBubblesTexture, uScaleBubbles * vUv + 0.5 + uVelocityBubbles * t).r;
+
+    float patternMask = texture2D(uPatternMaskTexture, vUv).r;
+    float bubblesMask = texture2D(uBubblesMaskTexture, vUv).r;
+
+    // Caustic lines: bright where the mask allows AND the two noise layers agree.
+    float pattern = step(uCut, patternMask - abs(p1 - p2));
+    // Bubble outlines: Voronoi walls in the gaps between caustics, gated by mask.
+    float bPattern1 = step(uCut, bubbles - pattern - bubblesMask);
+    // Keep caustic lines lit where they dominate the Voronoi value.
+    float bPattern2 = step(1.0 - uCut, pattern - bubbles);
+
+    gl_FragColor = vec4(uColor.rgb, (bPattern1 + bPattern2) * uColor.a);
+  }
+`

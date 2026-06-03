@@ -104,3 +104,62 @@ export function bakeGradientTexture(): THREE.DataTexture {
   texture.needsUpdate = true
   return texture
 }
+
+// Layer 4 (Caustic1) — bubbles_mask_texture. A vertical greyscale gradient that
+// gates where the Voronoi "bubbles" may appear: a broad black mid-section
+// suppresses them across most of the screen, leaving only a soft allowance at the
+// very top and bottom. Stops are from docs/layer4.md, given there in Godot UV
+// (y-down). We re-express them in our vUv (y-up) so screen-top is bright:
+//
+//   vUv.y 1.000 (top)    -> 0.389   |   Godot UV.y 0.000
+//   vUv.y 0.722          -> 0.000   |   Godot UV.y 0.278
+//   vUv.y 0.237          -> 0.000   |   Godot UV.y 0.763
+//   vUv.y 0.000 (bottom) -> 0.252   |   Godot UV.y 1.000
+//
+// Baked as a 1×256 column (sampled by vUv.y). DataTexture has flipY = false, so
+// data row 0 is vUv.y = 0 (bottom). Plain linear grey — it's a mask, not colour.
+const BUBBLE_MASK_STOPS: { pos: number; grey: number }[] = [
+  { pos: 0.0, grey: 0.252 }, // bottom
+  { pos: 0.237, grey: 0.0 },
+  { pos: 0.722, grey: 0.0 },
+  { pos: 1.0, grey: 0.389 }, // top
+]
+
+export function bakeBubblesMaskTexture(): THREE.DataTexture {
+  const height = 256
+  const data = new Uint8Array(height * 4)
+
+  for (let r = 0; r < height; r++) {
+    const pos = r / (height - 1) // vUv.y at this row
+
+    let lo = BUBBLE_MASK_STOPS[0]
+    let hi = BUBBLE_MASK_STOPS[BUBBLE_MASK_STOPS.length - 1]
+    for (let s = 0; s < BUBBLE_MASK_STOPS.length - 1; s++) {
+      if (pos >= BUBBLE_MASK_STOPS[s].pos && pos <= BUBBLE_MASK_STOPS[s + 1].pos) {
+        lo = BUBBLE_MASK_STOPS[s]
+        hi = BUBBLE_MASK_STOPS[s + 1]
+        break
+      }
+    }
+
+    const span = hi.pos - lo.pos
+    const t = span > 0 ? (pos - lo.pos) / span : 0
+    const grey = lo.grey + (hi.grey - lo.grey) * t
+    const byte = Math.round(grey * 255)
+
+    const o = r * 4
+    data[o] = byte
+    data[o + 1] = byte
+    data[o + 2] = byte
+    data[o + 3] = 255
+  }
+
+  const texture = new THREE.DataTexture(data, 1, height, THREE.RGBAFormat)
+  texture.colorSpace = THREE.NoColorSpace // mask data, not colour
+  texture.wrapS = THREE.ClampToEdgeWrapping
+  texture.wrapT = THREE.ClampToEdgeWrapping
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.needsUpdate = true
+  return texture
+}
