@@ -209,3 +209,37 @@ export const gaussianBlurFrag = /* glsl */ `
     gl_FragColor = vec4(blurred / totalWeight, 1.0);
   }
 `
+
+// Layer 7 — Dark gradient vignette. The first of two finishing gradient layers,
+// composited over the blurred composite via standard src-over (NormalBlending).
+// Static: no shader inputs, no time, no screen sampling — a pure UV-based diagonal
+// gradient running bottom-right -> top-left. It anchors the composition by
+// darkening the bottom-right corner to deep navy, fading to fully transparent at
+// the top-left so the bright caustics higher up stand out by contrast. Direct port
+// of the GradientTexture2D from docs/layer7.md (3 stops, two-phase alpha curve).
+export const darkGradientFrag = /* glsl */ `
+  precision highp float;
+
+  varying vec2 vUv;
+
+  void main() {
+    // Distance along the bottom-right -> top-left diagonal.
+    // gradPos = 0 at bottom-right (vUv 1,1), gradPos = 1 at top-left (vUv 0,0).
+    float t = 1.0 - (vUv.x + vUv.y) * 0.5;
+    float gradPos = 1.0 - t;
+
+    // Two-phase alpha curve matching the 3-stop gradient: a fast drop over the
+    // first 7.5% of the diagonal, then a long slow fade to full transparency.
+    float alpha;
+    if (gradPos < 0.075) {
+      alpha = mix(1.0, 0.784, gradPos / 0.075);
+    } else {
+      alpha = mix(0.784, 0.0, (gradPos - 0.075) / 0.925);
+    }
+
+    // Deep navy. The transparent end colour is irrelevant (alpha 0), so only this
+    // opaque-corner colour matters for the visible result.
+    vec3 darkNavy = vec3(0.0, 0.061, 0.429);
+    gl_FragColor = vec4(darkNavy, alpha);
+  }
+`

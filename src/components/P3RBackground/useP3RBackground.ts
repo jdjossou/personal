@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
 import { bakeBubblesTexture, bakeCaustic2PatternTexture, bakePatternTexture } from './noise'
-import { caustic1Frag, caustic2Frag, colorMapFrag, distortionFrag, fullscreenVert, gaussianBlurFrag } from './shaders'
+import { caustic1Frag, caustic2Frag, colorMapFrag, darkGradientFrag, distortionFrag, fullscreenVert, gaussianBlurFrag } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -178,6 +178,19 @@ export function useP3RBackground(
       },
     })
 
+    // Layer 7: Dark gradient vignette — a static, UV-based diagonal gradient
+    // darkening the bottom-right corner to deep navy and fading to transparent at
+    // the top-left. Composited over the blurred output via standard alpha (no
+    // uniforms; no time/resolution dependency).
+    const darkGradientMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: darkGradientFrag,
+      transparent: true,
+      blending: THREE.NormalBlending, // standard src-over alpha
+      depthTest: false,
+      depthWrite: false,
+    })
+
     function renderPass(
       material: THREE.Material,
       target: THREE.WebGLRenderTarget | null
@@ -216,6 +229,9 @@ export function useP3RBackground(
       renderer.autoClear = true
       blurMaterial.uniforms.uPreviousPass.value = rtB.texture
       renderPass(blurMaterial, null) // Layer 6 -> Gaussian blur to screen
+      renderer.autoClear = false
+      renderPass(darkGradientMaterial, null) // Layer 7 -> vignette over blur
+      renderer.autoClear = true
     }
     tick()
 
@@ -230,6 +246,7 @@ export function useP3RBackground(
       caustic2Geometry.dispose()
       caustic2Material.dispose()
       blurMaterial.dispose()
+      darkGradientMaterial.dispose()
       rtA.dispose()
       rtB.dispose()
       gradient.dispose()
