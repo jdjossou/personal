@@ -9,15 +9,22 @@ export const fullscreenVert = /* glsl */ `
 `
 
 // Layer 1 — color mapping. There is no live 3D scene to feed the shader, so we
-// generate the "input image" procedurally as low-contrast FBM noise, remap it
-// into a luminance range of ~0.05–0.4, and use that scalar to look up a color
-// in the 1D blue gradient (uGradient). This reproduces the navy↔electric-blue
-// variation the Godot version gets from scene depth.
+// synthesize the "input image" as a vertical luminance ramp — bright at the water
+// surface (top) fading to deep navy in the depths (bottom) — plus a little FBM
+// noise for organic depth. That scalar looks up a color in the 1D blue gradient
+// (uGradient). The vertical ramp is what the Godot version got for free from its
+// 3D scene's depth; reproducing it here is what gives the background its
+// light-cyan-top → deep-blue-bottom gradient instead of a flat field.
 export const colorMapFrag = /* glsl */ `
   precision highp float;
 
   uniform sampler2D uGradient;
   uniform float uAspect;
+  uniform float uTopLuma;    // luma at the top (vUv.y = 1)
+  uniform float uMidLuma;    // luma at uMidPoint
+  uniform float uBottomLuma; // luma at the bottom (vUv.y = 0)
+  uniform float uMidPoint;   // split between the two ramp halves
+  uniform float uNoiseAmp;   // ± FBM jitter added to the ramp
 
   varying vec2 vUv;
 
@@ -52,7 +59,17 @@ export const colorMapFrag = /* glsl */ `
     vec2 p = vUv * 3.0;
     p.x *= uAspect;
 
-    float luma = 0.05 + fbm(p) * 0.35;
+    // Piecewise vertical ramp: navy -> mid across the bottom (uMidPoint), then
+    // mid -> light across the top, so the upper (1 - uMidPoint) stays light blue.
+    float v = vUv.y;
+    float luma = (v < uMidPoint)
+      ? mix(uBottomLuma, uMidLuma, v / uMidPoint)
+      : mix(uMidLuma, uTopLuma, (v - uMidPoint) / (1.0 - uMidPoint));
+
+    // FBM only perturbs the ramp — it adds organic depth, not vertical structure.
+    luma += (fbm(p) - 0.5) * uNoiseAmp;
+    luma = clamp(luma, 0.0, 0.85);
+
     gl_FragColor = texture2D(uGradient, vec2(luma, 0.0));
   }
 `
@@ -77,6 +94,27 @@ export const distortionFrag = /* glsl */ `
     vec2 scaledUv = vec2(uAmplitude) + vUv * (1.0 - uAmplitude * 2.0);
     float wave = sin(vUv.x / uWaveLength + uTime * uSpeed) * uAmplitude;
     gl_FragColor = texture2D(uPreviousPass, scaledUv + vec2(0.0, wave));
+  }
+`
+
+// Layer 3 — cyan tint. A solid cyan wash composited over the distorted base via
+// standard alpha (NormalBlending) to unify the palette toward P3R's saturated
+// "underwater" blue. Unlike the Godot original's flat 82% tint, the alpha varies
+// vertically (strong on the bright surface, light on the depths) so the deep navy
+// at the bottom of the base ramp survives instead of being flattened to a uniform
+// mid-cyan. Output alpha is non-premultiplied — THREE handles the src-over blend.
+export const tintFrag = /* glsl */ `
+  precision highp float;
+
+  uniform vec3 uTintColor;
+  uniform float uAlphaTop;
+  uniform float uAlphaBottom;
+
+  varying vec2 vUv;
+
+  void main() {
+    float alpha = mix(uAlphaBottom, uAlphaTop, vUv.y);
+    gl_FragColor = vec4(uTintColor, alpha);
   }
 `
 
@@ -107,12 +145,13 @@ export const caustic1Frag = /* glsl */ `
   uniform vec2 uScaleBubbles;
   uniform float uCut;
   uniform float uTime;
+  uniform float uSteppedFps;
 
   varying vec2 vUv;
 
   void main() {
-    // Snap time to 6 discrete steps/sec — the source's updates_per_second.
-    float t = floor(uTime * 6.0) / 6.0;
+    // Snap time to discrete steps/sec — the source's updates_per_second.
+    float t = floor(uTime * uSteppedFps) / uSteppedFps;
 
     float p1 = texture2D(uPatternTexture, uScaleMain * vUv + uVelocityMain * t).r;
     float p2 = texture2D(uPatternTexture, uScaleSecond * vUv + 0.5 + uVelocitySecond * t).r;
@@ -150,12 +189,13 @@ export const caustic2Frag = /* glsl */ `
   uniform vec2 uScaleSecond;
   uniform float uCut;
   uniform float uTime;
+  uniform float uSteppedFps;
 
   varying vec2 vUv;
 
   void main() {
-    // Snap time to 6 discrete steps/sec — same updates_per_second as Caustic1.
-    float t = floor(uTime * 6.0) / 6.0;
+    // Snap time to discrete steps/sec — same updates_per_second as Caustic1.
+    float t = floor(uTime * uSteppedFps) / uSteppedFps;
 
     float p1 = texture2D(uPatternTexture, uScaleMain * vUv + uVelocityMain * t).r;
     float p2 = texture2D(uPatternTexture, uScaleSecond * vUv + 0.5 + uVelocitySecond * t).r;

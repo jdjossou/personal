@@ -2,9 +2,35 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import {
+  BASE_GRADIENT,
+  BLUR,
+  CAUSTIC1,
+  CAUSTIC2,
+  CAUSTIC2_PANEL,
+  DISTORTION,
+  DPR_CAP,
+  STEPPED_FPS,
+  TINT,
+} from './constants'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
 import { bakeBubblesTexture, bakeCaustic2PatternTexture, bakePatternTexture } from './noise'
-import { caustic1Frag, caustic2Frag, colorMapFrag, darkGradientFrag, distortionFrag, fullscreenVert, gaussianBlurFrag, lightGradientFrag } from './shaders'
+import {
+  caustic1Frag,
+  caustic2Frag,
+  colorMapFrag,
+  darkGradientFrag,
+  distortionFrag,
+  fullscreenVert,
+  gaussianBlurFrag,
+  lightGradientFrag,
+  tintFrag,
+} from './shaders'
+
+// Build THREE vectors from the plain tuples in constants.ts (kept THREE-free).
+const v2 = (t: readonly [number, number]) => new THREE.Vector2(t[0], t[1])
+const v4 = (t: readonly [number, number, number, number]) =>
+  new THREE.Vector4(t[0], t[1], t[2], t[3])
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -17,7 +43,9 @@ export function useP3RBackground(
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false })
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(window.devicePixelRatio)
+    // Cap DPR so the 2-RT + 49-tap-blur pipeline never renders at the full 2–3×
+    // of a retina panel (big, safe perf win on laptops/phones).
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP))
 
     const timer = new THREE.Timer()
 
@@ -38,15 +66,15 @@ export function useP3RBackground(
       new THREE.WebGLRenderTarget(size.x, size.y, { depthBuffer: false, stencilBuffer: false })
     const rtA = makeRT()
     // rtB holds the fully composited layers 1–5 so the blur (Layer 6) can resample
-    // it. Tagged sRGB so the tint's MeshBasicMaterial writes the *same* bytes it
-    // currently writes to screen (its colorspace conversion targets the RT's
-    // colorSpace). The ShaderMaterial layers emit raw values regardless, so this
-    // keeps the pre-blur composite byte-identical to the current on-screen image —
-    // then merely softened.
+    // it. Tagged sRGB so the composite bytes match the on-screen image. Every layer
+    // here is a raw ShaderMaterial emitting display-space values directly, so the
+    // pre-blur composite is byte-identical to the final image — then merely softened.
     const rtB = makeRT()
     rtB.texture.colorSpace = THREE.SRGBColorSpace
 
-    // Layer 1: luminance of procedural FBM noise -> 1D blue gradient LUT.
+    // Layer 1: vertical luminance ramp (bright surface -> deep navy) + a little
+    // FBM, fed through the 1D blue gradient LUT. This ramp is what produces the
+    // light-cyan-top → deep-blue-bottom gradient.
     const gradient = bakeGradientTexture()
     const colorMapMaterial = new THREE.ShaderMaterial({
       vertexShader: fullscreenVert,
@@ -54,6 +82,11 @@ export function useP3RBackground(
       uniforms: {
         uGradient: { value: gradient },
         uAspect: { value: window.innerWidth / window.innerHeight },
+        uTopLuma: { value: BASE_GRADIENT.topLuma },
+        uMidLuma: { value: BASE_GRADIENT.midLuma },
+        uBottomLuma: { value: BASE_GRADIENT.bottomLuma },
+        uMidPoint: { value: BASE_GRADIENT.midPoint },
+        uNoiseAmp: { value: BASE_GRADIENT.noiseAmp },
       },
     })
 
@@ -64,21 +97,27 @@ export function useP3RBackground(
       uniforms: {
         uPreviousPass: { value: null },
         uTime: { value: 0 },
-        uAmplitude: { value: 0.02 },
-        uSpeed: { value: 0.5 },
-        uWaveLength: { value: 0.08 },
+        uAmplitude: { value: DISTORTION.amplitude },
+        uSpeed: { value: DISTORTION.speed },
+        uWaveLength: { value: DISTORTION.waveLength },
       },
     })
 
-    // Layer 3: cyan tint — solid color composited over the distorted image to
-    // unify the palette toward P3R's saturated "underwater" blue.
-    const tintMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0x007fd2), // sRGB cyan (doc's display-ready hex)
+    // Layer 3: cyan tint — a vertical-alpha cyan wash (strong at the surface, light
+    // in the depths) so the base ramp's navy bottom survives instead of flattening
+    // to a uniform mid-cyan the way the original flat 82% tint did.
+    const tintMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: tintFrag,
       transparent: true,
-      opacity: 210 / 255, // ≈ 0.824 — faithful to docs/layer3.md
       blending: THREE.NormalBlending,
       depthTest: false,
       depthWrite: false,
+      uniforms: {
+        uTintColor: { value: new THREE.Vector3(TINT.color[0], TINT.color[1], TINT.color[2]) },
+        uAlphaTop: { value: TINT.alphaTop },
+        uAlphaBottom: { value: TINT.alphaBottom },
+      },
     })
 
     // Layer 4: Caustic1 — additive teal caustics + Voronoi bubble outlines.
@@ -88,7 +127,8 @@ export function useP3RBackground(
     const bubblesTexture = bakeBubblesTexture()
     const bubblesMask = bakeBubblesMaskTexture()
     const patternMask = new THREE.TextureLoader().load(
-      '/assets/textures/caustic_1_mask.png'
+      '/assets/textures/caustic_1_mask.png',
+      onMaskLoaded
     )
     patternMask.colorSpace = THREE.NoColorSpace // greyscale gate, not colour
     patternMask.wrapS = THREE.ClampToEdgeWrapping
@@ -108,15 +148,16 @@ export function useP3RBackground(
         uPatternMaskTexture: { value: patternMask },
         uBubblesTexture: { value: bubblesTexture },
         uBubblesMaskTexture: { value: bubblesMask },
-        uColor: { value: new THREE.Vector4(0.331, 0.929, 0.919, 0.255) },
-        uVelocityMain: { value: new THREE.Vector2(0.0, -0.07) },
-        uVelocitySecond: { value: new THREE.Vector2(0.0, 0.1) },
-        uVelocityBubbles: { value: new THREE.Vector2(0.0, 0.13) },
-        uScaleMain: { value: new THREE.Vector2(0.5, 0.5) },
-        uScaleSecond: { value: new THREE.Vector2(1.0, 4.0) },
-        uScaleBubbles: { value: new THREE.Vector2(1.6, 0.9) },
-        uCut: { value: 0.79 },
+        uColor: { value: v4(CAUSTIC1.color) },
+        uVelocityMain: { value: v2(CAUSTIC1.velocityMain) },
+        uVelocitySecond: { value: v2(CAUSTIC1.velocitySecond) },
+        uVelocityBubbles: { value: v2(CAUSTIC1.velocityBubbles) },
+        uScaleMain: { value: v2(CAUSTIC1.scaleMain) },
+        uScaleSecond: { value: v2(CAUSTIC1.scaleSecond) },
+        uScaleBubbles: { value: v2(CAUSTIC1.scaleBubbles) },
+        uCut: { value: CAUSTIC1.cut },
         uTime: { value: 0 },
+        uSteppedFps: { value: STEPPED_FPS },
       },
     })
 
@@ -125,7 +166,8 @@ export function useP3RBackground(
     // lower-frequency Perlin texture and a hand-painted caustic-band mask.
     const caustic2Pattern = bakeCaustic2PatternTexture()
     const caustic2Mask = new THREE.TextureLoader().load(
-      '/assets/textures/caustic_2_mask.png'
+      '/assets/textures/caustic_2_mask.png',
+      onMaskLoaded
     )
     caustic2Mask.colorSpace = THREE.NoColorSpace // greyscale gate, not colour
     caustic2Mask.wrapS = THREE.ClampToEdgeWrapping
@@ -143,23 +185,22 @@ export function useP3RBackground(
       uniforms: {
         uPatternTexture: { value: caustic2Pattern },
         uMaskTexture: { value: caustic2Mask },
-        uColor: { value: new THREE.Vector4(0.587, 0.888, 0.939, 0.471) },
-        uVelocityMain: { value: new THREE.Vector2(0.0, -0.1) },
-        uVelocitySecond: { value: new THREE.Vector2(0.0, 0.25) },
-        uScaleMain: { value: new THREE.Vector2(1.0, 1.0) },
-        uScaleSecond: { value: new THREE.Vector2(1.0, 2.0) },
-        uCut: { value: 0.48 },
+        uColor: { value: v4(CAUSTIC2.color) },
+        uVelocityMain: { value: v2(CAUSTIC2.velocityMain) },
+        uVelocitySecond: { value: v2(CAUSTIC2.velocitySecond) },
+        uScaleMain: { value: v2(CAUSTIC2.scaleMain) },
+        uScaleSecond: { value: v2(CAUSTIC2.scaleSecond) },
+        uCut: { value: CAUSTIC2.cut },
         uTime: { value: 0 },
+        uSteppedFps: { value: STEPPED_FPS },
       },
     })
 
     // Unlike the other layers this is not full-screen. fullscreenVert passes
     // vertex positions straight through as clip coords (ignoring camera/model
     // matrices), so the panel's placement is baked into the geometry vertices.
-    // On a 1920×1080 reference that's 960 px/NDC-unit X, 540 px/NDC-unit Y:
-    // right edge 176px from the right, top edge 16px above the frame.
-    const caustic2Geometry = new THREE.PlaneGeometry(512 / 960, 512 / 540)
-    caustic2Geometry.translate(0.55, 0.5556, 0)
+    const caustic2Geometry = new THREE.PlaneGeometry(CAUSTIC2_PANEL.width, CAUSTIC2_PANEL.height)
+    caustic2Geometry.translate(CAUSTIC2_PANEL.offsetX, CAUSTIC2_PANEL.offsetY, 0)
     const caustic2Mesh = new THREE.Mesh(caustic2Geometry, caustic2Material)
     // Its own scene so it isn't drawn during the full-screen passScene passes.
     const panelScene = new THREE.Scene()
@@ -174,14 +215,13 @@ export function useP3RBackground(
       uniforms: {
         uPreviousPass: { value: null },
         uResolution: { value: new THREE.Vector2(size.x, size.y) },
-        uSigma: { value: 1.4 }, // runtime value from docs/layer6.md (not the 3.3 default)
+        uSigma: { value: BLUR.sigma },
       },
     })
 
     // Layer 7: Dark gradient vignette — a static, UV-based diagonal gradient
     // darkening the bottom-right corner to deep navy and fading to transparent at
-    // the top-left. Composited over the blurred output via standard alpha (no
-    // uniforms; no time/resolution dependency).
+    // the top-left. Composited over the blurred output via standard alpha.
     const darkGradientMaterial = new THREE.ShaderMaterial({
       vertexShader: fullscreenVert,
       fragmentShader: darkGradientFrag,
@@ -193,8 +233,7 @@ export function useP3RBackground(
 
     // Layer 8: Light gradient — the additive counterpart to Layer 7. A static,
     // UV-based diagonal gradient adding a soft teal-cyan glow to the top-left
-    // corner (transparent across the bottom-right half). Additive blending means
-    // it can only brighten the composite, never darken it. No uniforms.
+    // corner (transparent across the bottom-right half).
     const lightGradientMaterial = new THREE.ShaderMaterial({
       vertexShader: fullscreenVert,
       fragmentShader: lightGradientFrag,
@@ -213,29 +252,13 @@ export function useP3RBackground(
       renderer.render(passScene, camera)
     }
 
-    function onResize() {
-      renderer.setSize(window.innerWidth, window.innerHeight)
-      const s = renderer.getDrawingBufferSize(new THREE.Vector2())
-      rtA.setSize(s.x, s.y)
-      rtB.setSize(s.x, s.y)
-      blurMaterial.uniforms.uResolution.value.set(s.x, s.y)
-      colorMapMaterial.uniforms.uAspect.value = window.innerWidth / window.innerHeight
-    }
-    window.addEventListener('resize', onResize)
-
-    function tick() {
-      frameIdRef.current = requestAnimationFrame(tick)
-      timer.update() // advance the Timer; getElapsed() only moves after update()
-      const elapsed = timer.getElapsed()
-      distortionMaterial.uniforms.uTime.value = elapsed
-      caustic1Material.uniforms.uTime.value = elapsed
-      caustic2Material.uniforms.uTime.value = elapsed
-
+    // The full 8-layer composite for the current uniform state (one frame).
+    function renderScene() {
       renderPass(colorMapMaterial, rtA) // Layer 1 -> rtA
       distortionMaterial.uniforms.uPreviousPass.value = rtA.texture
       renderPass(distortionMaterial, rtB) // Layer 2 -> rtB (composite target)
       renderer.autoClear = false
-      renderPass(tintMaterial, rtB) // Layer 3 -> composited over rtB
+      renderPass(tintMaterial, rtB) // Layer 3 -> vertical cyan wash over rtB
       renderPass(caustic1Material, rtB) // Layer 4 -> additive caustics/bubbles
       renderer.setRenderTarget(rtB)
       renderer.render(panelScene, camera) // Layer 5 -> additive top-right panel
@@ -247,11 +270,86 @@ export function useP3RBackground(
       renderPass(lightGradientMaterial, null) // Layer 8 -> additive teal glow
       renderer.autoClear = true
     }
-    tick()
+
+    function setAnimationTime(elapsed: number) {
+      distortionMaterial.uniforms.uTime.value = elapsed
+      caustic1Material.uniforms.uTime.value = elapsed
+      caustic2Material.uniforms.uTime.value = elapsed
+    }
+
+    function onResize() {
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP))
+      const s = renderer.getDrawingBufferSize(new THREE.Vector2())
+      rtA.setSize(s.x, s.y)
+      rtB.setSize(s.x, s.y)
+      blurMaterial.uniforms.uResolution.value.set(s.x, s.y)
+      colorMapMaterial.uniforms.uAspect.value = window.innerWidth / window.innerHeight
+      // When the loop is paused (reduced-motion), refresh the static frame so the
+      // resized buffers aren't shown stale/stretched.
+      if (reduceMotion.matches) renderScene()
+    }
+
+    function tick() {
+      frameIdRef.current = requestAnimationFrame(tick)
+      timer.update() // advance the Timer; getElapsed() only moves after update()
+      setAnimationTime(timer.getElapsed())
+      renderScene()
+    }
+
+    function startLoop() {
+      cancelAnimationFrame(frameIdRef.current) // never stack two rAF chains
+      frameIdRef.current = requestAnimationFrame(tick)
+    }
+
+    function stopLoop() {
+      cancelAnimationFrame(frameIdRef.current)
+    }
+
+    // Reduced motion: render a single frozen, fully-composited frame and never
+    // start the animation loop. Re-evaluated live if the user toggles the setting.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+    // The caustic masks (PNGs) load asynchronously. In the animated path the loop
+    // picks them up automatically, but the reduced-motion path renders only once —
+    // possibly before they arrive — so re-draw the frozen frame as each lands.
+    function onMaskLoaded() {
+      if (reduceMotion.matches && !document.hidden) renderScene()
+    }
+
+    function applyMotionPreference() {
+      if (reduceMotion.matches) {
+        stopLoop()
+        // Freeze at a developed 6fps step whose caustic pattern is dense at the
+        // top, so the static frame reads like the animated one paused (not a
+        // plainer, near-caustic-free background).
+        setAnimationTime(3.5)
+        renderScene()
+      } else {
+        startLoop()
+      }
+    }
+
+    // Pause the loop while the tab is hidden — no point spending GPU off-screen.
+    function onVisibilityChange() {
+      if (document.hidden) {
+        stopLoop()
+      } else if (!reduceMotion.matches) {
+        startLoop()
+      }
+    }
+
+    window.addEventListener('resize', onResize)
+    reduceMotion.addEventListener('change', applyMotionPreference)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    applyMotionPreference()
 
     return () => {
-      cancelAnimationFrame(frameIdRef.current)
+      stopLoop()
       window.removeEventListener('resize', onResize)
+      reduceMotion.removeEventListener('change', applyMotionPreference)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       quadGeometry.dispose()
       colorMapMaterial.dispose()
       distortionMaterial.dispose()
