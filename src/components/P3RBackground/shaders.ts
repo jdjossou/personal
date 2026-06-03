@@ -167,3 +167,45 @@ export const caustic2Frag = /* glsl */ `
     gl_FragColor = vec4(uColor.rgb, pattern * uColor.a);
   }
 `
+
+// Layer 6 — Gaussian blur. A full-screen post-process over the composited output
+// of layers 1–5 (resampled from an off-screen render target). A 7×7 Gaussian
+// kernel (radius 3, σ=1.4) softens the hard binary edges left by the caustics'
+// step() outputs into smooth ~2–3px gradients — giving the streaks a diffuse,
+// light-through-water glow instead of aliased geometric cutouts. Deliberately
+// mild: the image does not read as "blurry". Direct port of gaussian_blur.gdshader
+// (docs/layer6.md): SCREEN_TEXTURE -> uPreviousPass, SCREEN_PIXEL_SIZE -> 1/uResolution.
+export const gaussianBlurFrag = /* glsl */ `
+  precision highp float;
+
+  uniform sampler2D uPreviousPass;
+  uniform vec2 uResolution;
+  uniform float uSigma;
+
+  varying vec2 vUv;
+
+  // 1D Gaussian weight at integer offset x. The 2D kernel is separable, so the
+  // 2D weight is G(i) * G(j). (PI inlined to avoid clashing with any prelude.)
+  float gaussian(float x, float sigma) {
+    return exp(-(x * x) / (2.0 * sigma * sigma)) / (sqrt(2.0 * 3.141592653589793) * sigma);
+  }
+
+  void main() {
+    vec2 pixelSize = 1.0 / uResolution; // UV size of one texel
+    vec3 blurred = vec3(0.0);
+    float totalWeight = 0.0;
+
+    // 7x7 neighbourhood (49 samples) centred on the current pixel.
+    for (int i = -3; i <= 3; i++) {
+      for (int j = -3; j <= 3; j++) {
+        vec2 offset = vec2(float(i), float(j)) * pixelSize;
+        float weight = gaussian(float(i), uSigma) * gaussian(float(j), uSigma);
+        blurred += texture2D(uPreviousPass, vUv + offset).rgb * weight;
+        totalWeight += weight;
+      }
+    }
+
+    // Normalise so brightness is preserved exactly (no darkening/brightening).
+    gl_FragColor = vec4(blurred / totalWeight, 1.0);
+  }
+`

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
 import { bakeBubblesTexture, bakeCaustic2PatternTexture, bakePatternTexture } from './noise'
-import { caustic1Frag, caustic2Frag, colorMapFrag, distortionFrag, fullscreenVert } from './shaders'
+import { caustic1Frag, caustic2Frag, colorMapFrag, distortionFrag, fullscreenVert, gaussianBlurFrag } from './shaders'
 
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -37,7 +37,14 @@ export function useP3RBackground(
     const makeRT = () =>
       new THREE.WebGLRenderTarget(size.x, size.y, { depthBuffer: false, stencilBuffer: false })
     const rtA = makeRT()
-    // A second target (rtB) gets introduced for ping-pong once layers 3+ land.
+    // rtB holds the fully composited layers 1–5 so the blur (Layer 6) can resample
+    // it. Tagged sRGB so the tint's MeshBasicMaterial writes the *same* bytes it
+    // currently writes to screen (its colorspace conversion targets the RT's
+    // colorSpace). The ShaderMaterial layers emit raw values regardless, so this
+    // keeps the pre-blur composite byte-identical to the current on-screen image —
+    // then merely softened.
+    const rtB = makeRT()
+    rtB.texture.colorSpace = THREE.SRGBColorSpace
 
     // Layer 1: luminance of procedural FBM noise -> 1D blue gradient LUT.
     const gradient = bakeGradientTexture()
@@ -158,6 +165,19 @@ export function useP3RBackground(
     const panelScene = new THREE.Scene()
     panelScene.add(caustic2Mesh)
 
+    // Layer 6: Gaussian blur — full-screen soft-focus post-process over the
+    // composited rtB. Resolution tracks the drawing buffer so one kernel step =
+    // one device pixel.
+    const blurMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVert,
+      fragmentShader: gaussianBlurFrag,
+      uniforms: {
+        uPreviousPass: { value: null },
+        uResolution: { value: new THREE.Vector2(size.x, size.y) },
+        uSigma: { value: 1.4 }, // runtime value from docs/layer6.md (not the 3.3 default)
+      },
+    })
+
     function renderPass(
       material: THREE.Material,
       target: THREE.WebGLRenderTarget | null
@@ -171,6 +191,8 @@ export function useP3RBackground(
       renderer.setSize(window.innerWidth, window.innerHeight)
       const s = renderer.getDrawingBufferSize(new THREE.Vector2())
       rtA.setSize(s.x, s.y)
+      rtB.setSize(s.x, s.y)
+      blurMaterial.uniforms.uResolution.value.set(s.x, s.y)
       colorMapMaterial.uniforms.uAspect.value = window.innerWidth / window.innerHeight
     }
     window.addEventListener('resize', onResize)
@@ -183,15 +205,17 @@ export function useP3RBackground(
       caustic1Material.uniforms.uTime.value = elapsed
       caustic2Material.uniforms.uTime.value = elapsed
 
-      renderPass(colorMapMaterial, rtA) // Layer 1 -> off-screen
+      renderPass(colorMapMaterial, rtA) // Layer 1 -> rtA
       distortionMaterial.uniforms.uPreviousPass.value = rtA.texture
-      renderPass(distortionMaterial, null) // Layer 2 -> screen
+      renderPass(distortionMaterial, rtB) // Layer 2 -> rtB (composite target)
       renderer.autoClear = false
-      renderPass(tintMaterial, null) // Layer 3 -> composited over screen
-      renderPass(caustic1Material, null) // Layer 4 -> additive caustics/bubbles
-      renderer.setRenderTarget(null)
+      renderPass(tintMaterial, rtB) // Layer 3 -> composited over rtB
+      renderPass(caustic1Material, rtB) // Layer 4 -> additive caustics/bubbles
+      renderer.setRenderTarget(rtB)
       renderer.render(panelScene, camera) // Layer 5 -> additive top-right panel
       renderer.autoClear = true
+      blurMaterial.uniforms.uPreviousPass.value = rtB.texture
+      renderPass(blurMaterial, null) // Layer 6 -> Gaussian blur to screen
     }
     tick()
 
@@ -205,7 +229,9 @@ export function useP3RBackground(
       caustic1Material.dispose()
       caustic2Geometry.dispose()
       caustic2Material.dispose()
+      blurMaterial.dispose()
       rtA.dispose()
+      rtB.dispose()
       gradient.dispose()
       patternTexture.dispose()
       bubblesTexture.dispose()
