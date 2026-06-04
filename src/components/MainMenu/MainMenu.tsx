@@ -1,26 +1,28 @@
 'use client'
 
-// Main menu — Task 02: selection system + selector cursor.
+// Main menu — Task 02: selection system + selector cursor; Task 06: input wiring.
 // A single `selectedIndex` drives everything. Each item is tilted at its own
 // angle, the items overlap vertically, and their blue brightens toward the
 // front of the stack (see ITEM_STYLES). The selected item is rendered as a
 // stack: two angular triangles BEHIND the text (white over an offset red
 // "shadow"), then the text itself in two tones — black where it sits over the
 // blue background, red where it crosses the white triangle (a clip-path matching
-// the triangle drives the recolour). Input wiring (keyboard/mouse/touch) is
-// Task 06; a temporary auto-cycle advances the selection so the motion is
-// testable. The component stays a transparent full-screen overlay so the global
-// P3R water background (mounted in layout.tsx) keeps showing through.
+// the triangle drives the recolour). Input (Task 06): arrow keys move the
+// selection (wrapping), Enter / click / tap open a section (router.push to its
+// route), Escape calls onBack to return to the landing screen, and mouse hover
+// selects an item instantly. The component stays a transparent full-screen
+// overlay so the global P3R water background (mounted in layout.tsx) shows through.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useRouter } from 'next/navigation'
 import { InfoBlock } from './InfoBlock'
 import { LeftPanel } from './LeftPanel'
 import { Selector } from './Selector'
 import {
-  AUTOCYCLE_MS,
   ITEM_STYLES,
   ITEM_TRANSITION_MS,
   MENU_ITEMS,
+  MENU_ROUTES,
   MENU_INACTIVE_FONT,
   MENU_LIST_PAD_LEFT_VW,
   MENU_SELECTED_FONT,
@@ -38,22 +40,89 @@ import {
   shapeClipPath,
 } from './constants'
 
-export function MainMenu() {
-  const [selectedIndex, setSelectedIndex] = useState(0)
+type MainMenuProps = {
+  // Called on Escape (or a touch back gesture) — returns to the landing screen.
+  onBack: () => void
+}
 
-  // TEMP — remove in Task 06 (input wiring).
-  // Auto-advances the selection on a loop so the selector's entrance twitch,
-  // idle wobble, and the two-tone text can be observed without input handlers.
+// Stable no-op subscriber for useSyncExternalStore: the pointer type is read
+// once and never updated (we deliberately don't react to device changes).
+const NO_SUBSCRIBE = () => () => {}
+
+export function MainMenu({ onBack }: MainMenuProps) {
+  const router = useRouter()
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  // Pointer type, committed once at load (Task 06): coarse pointers get the
+  // "tap to open" hint, everything else the keyboard prompt row. Read via
+  // useSyncExternalStore (no-op subscribe) so the value is consistent across
+  // SSR/hydration without a setState-in-effect; we never re-subscribe, matching
+  // the "pick one at load time" rule.
+  const isTouch = useSyncExternalStore(
+    NO_SUBSCRIBE,
+    () => window.matchMedia('(pointer: coarse)').matches,
+    () => false,
+  )
+  const rootRef = useRef<HTMLElement>(null)
+  // Mirror the latest selectedIndex / onBack so the keydown listener can read
+  // them without re-subscribing on every change. Synced in effects (not during
+  // render) to keep refs render-pure.
+  const selectedRef = useRef(selectedIndex)
+  const onBackRef = useRef(onBack)
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setSelectedIndex((i) => (i + 1) % MENU_ITEMS.length)
-    }, AUTOCYCLE_MS)
-    return () => window.clearInterval(id)
+    selectedRef.current = selectedIndex
+  }, [selectedIndex])
+  useEffect(() => {
+    onBackRef.current = onBack
+  }, [onBack])
+
+  // Open a section: confirm sound (Task 09) and exit transition (Task 08) hook
+  // in here later; for now navigate straight to the section's route.
+  function openSection(index: number) {
+    // TODO Task 09: play confirm sound.
+    // TODO Task 08: run the exit transition, then navigate.
+    router.push(MENU_ROUTES[index])
+  }
+
+  // Focus the menu on open so keystrokes are captured immediately (Task 06).
+  useEffect(() => {
+    rootRef.current?.focus()
   }, [])
-  // END TEMP
+
+  // Global keyboard navigation (Task 06). Attached to window so it works
+  // regardless of focus; removed on unmount to avoid ghost inputs.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const len = MENU_ITEMS.length
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedIndex((i) => (i - 1 + len) % len)
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedIndex((i) => (i + 1) % len)
+          break
+        case 'Enter':
+          e.preventDefault()
+          openSection(selectedRef.current)
+          break
+        case 'Escape':
+          e.preventDefault()
+          onBackRef.current()
+          break
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
-    <main className="fixed inset-0 z-0 overflow-hidden bg-transparent select-none">
+    <main
+      ref={rootRef}
+      tabIndex={-1}
+      className="fixed inset-0 z-0 overflow-hidden bg-transparent outline-none select-none"
+    >
       {/* Left visual — the flat white region with its organic, flowing water edge
           (z-0, in front of the z:-1 water canvas, behind the z-10 menu text),
           taking the role P3R gives its character art, plus the giant black
@@ -98,7 +167,9 @@ export function MainMenu() {
                 key={item}
                 data-menu-item={item}
                 data-selected={isSelected}
-                className={`font-display leading-none tracking-wide uppercase ${
+                onMouseEnter={() => setSelectedIndex(i)}
+                onClick={() => openSection(i)}
+                className={`cursor-pointer font-display leading-none tracking-wide uppercase ${
                   isSelected ? 'relative' : ''
                 }`}
                 style={{
@@ -164,20 +235,22 @@ export function MainMenu() {
         <div className="flex flex-col items-end gap-2 text-right">
           {SHOW_SYSTEM_PANELS && <InfoBlock selectedIndex={selectedIndex} />}
 
-          {/* Navigation prompts (desktop). */}
-          <div
-            className="hidden gap-6 font-mono text-xs tracking-wide text-white/50 sm:flex"
-            data-nav-prompts
-          >
-            <span>↑ ↓ / Move</span>
-            <span>Enter / Select</span>
-            <span>Esc / Back</span>
-          </div>
-
-          {/* Touch hint (mobile). */}
-          <div className="font-mono text-xs tracking-wide text-white/50 sm:hidden">
-            Tap a command to open it
-          </div>
+          {/* Navigation prompts — pointer-based: coarse pointers get the tap
+              hint, everything else the keyboard prompt row (Task 06). */}
+          {isTouch ? (
+            <div className="font-mono text-xs tracking-wide text-white/50">
+              Tap a command to open it
+            </div>
+          ) : (
+            <div
+              className="flex gap-6 font-mono text-xs tracking-wide text-white/50"
+              data-nav-prompts
+            >
+              <span>↑ ↓ / Move</span>
+              <span>Enter / Select</span>
+              <span>Esc / Back</span>
+            </div>
+          )}
         </div>
       </div>
     </main>

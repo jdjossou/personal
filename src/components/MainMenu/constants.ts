@@ -10,6 +10,16 @@ export const MENU_ITEMS = [
   'ASKME',
 ] as const
 
+// Navigation target per menu item, indices aligned to MENU_ITEMS. Opening an
+// item (Enter / click / tap) router.pushes the matching route (Task 06).
+export const MENU_ROUTES = [
+  '/projects',
+  '/education',
+  '/experience',
+  '/stack',
+  '/askme',
+] as const
+
 // --- Selected-item colours -------------------------------------------------
 // Selected text is two-tone: black where it sits over the plain blue background,
 // red where it crosses the white selector triangle.
@@ -61,8 +71,6 @@ export const ITEM_TRANSITION_MS = 100
 // Selector entrance jolt + perpetual low-frequency idle wobble.
 export const TWITCH_MS = 150
 export const IDLE_PERIOD_MS = 2500
-// Temporary: drives the demo auto-cycle until Task 06 wires real input.
-export const AUTOCYCLE_MS = 1500
 
 // --- Selector geometry -----------------------------------------------------
 // A true triangle, as fractional points in a 0–100 box (y grows downward). It
