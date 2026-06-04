@@ -45,6 +45,16 @@ export const ITEM_STYLES: readonly ItemStyle[] = [
 // The selected item always sits on top of the stack.
 export const SELECTED_Z = 20
 
+// --- Menu list layout (section texts) --------------------------------------
+// Size + horizontal placement of the vertical section list (Zone B). Sizes are
+// CSS font-size (clamp keeps them responsive); the selected item is larger than
+// the inactive ones. The list is anchored to the right edge: a wider zone +
+// smaller left pad push the whole list further left.
+export const MENU_SELECTED_FONT = 'clamp(3.5rem, 6.6vw, 5.6rem)'
+export const MENU_INACTIVE_FONT = 'clamp(3rem, 5.6vw, 4.7rem)'
+export const MENU_ZONE_WIDTH = '80%' // width of the right-hand zone the list fills
+export const MENU_LIST_PAD_LEFT_VW = 0 // left pad inside that zone (vw); smaller = further left
+
 // --- Timings ---------------------------------------------------------------
 // Item swap is near-instant so the hierarchy snaps rather than morphs.
 export const ITEM_TRANSITION_MS = 100
@@ -79,3 +89,47 @@ export const shapeSvgPoints = (): string =>
 
 export const shapeClipPath = (): string =>
   `polygon(${SELECTOR_SHAPE.map(([x, y]) => `${x}% ${y}%`).join(', ')})`
+
+// --- Left panel (Task 04) --------------------------------------------------
+// The left side of the menu is a flat WHITE region whose right edge is an
+// organic, gently-flowing curve (not a straight line) — taking the role the
+// character's body outline plays in the P3R reference. The white hides the water
+// on the left; the curve reveals it on the right. Coordinates are in the panel
+// SVG's 0–100 viewBox (preserveAspectRatio="none", so x maps to screen width).
+// Master toggle for the whole left visual — set to false to remove both the
+// white background panel AND the name label on it (leaving just the water).
+export const SHOW_LEFT_PANEL = true
+
+export const PANEL_WHITE = '#FFFFFF'
+// The white region is slightly transparent so the water tints through it.
+export const PANEL_OPACITY = 0.9
+
+// Mean horizontal position of the white/blue boundary (viewBox units ≈ % width).
+export const PANEL_BASE_X = 13
+// The edge is sampled at this many points down its height, then smoothed.
+export const PANEL_EDGE_SAMPLES = 9
+// Two layered sine waves deform the edge over (y, time) for an organic, slowly
+// morphing silhouette. `k` is spatial frequency (per viewBox height), `speed` is
+// temporal (rad/s), `amp` in viewBox units. Small amplitudes = "a little bit".
+export const PANEL_WAVES = [
+  { amp: 0.5, k: 0.6, speed: 0.1, phase: 0 },
+  { amp: 1, k: 2.3, speed: 0.2, phase: 1.7 },
+] as const
+
+// Big vertical name down the far-left edge (Bebas). Black, very large.
+export const VERTICAL_LABEL = 'JUNIEL'
+// Font-size of the name — fully viewport-relative so it never breaks. It is
+// capped by viewport HEIGHT (the stacked letters keep their vertical proportion
+// and their bottom overflow) AND, via min(), by WIDTH (so on narrow/tall phones
+// the vertical column can't grow wider than the screen). The small rem floor
+// keeps it legible on tiny screens; the rem ceiling stops it on huge ones.
+export const LABEL_FONT = 'clamp(4rem, min(42vh, 27vw), 32rem)'
+// Slightly transparent so it isn't a flat solid black on the white.
+export const LABEL_OPACITY = 0.75
+// Vertical placement: the name is centred on the screen's middle, then shifted by
+// this offset (vh, positive = downward). Centring keeps it near the middle on
+// smaller screens too; the offset lets you nudge it off-centre.
+export const LABEL_OFFSET_VH = 0
+// Horizontal offset of the name, in vw. Negative pushes it off the left edge of
+// the screen (so the left side of the letters runs out of view).
+export const LABEL_LEFT_VW = -30

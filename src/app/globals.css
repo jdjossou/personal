@@ -54,7 +54,9 @@ body {
 }
 
 /* Honour reduced-motion: drop the twitch/idle wobble and let the selector snap
-   into place instantly, matching how the P3R background freezes its animation. */
+   into place instantly, matching how the P3R background freezes its animation.
+   (The left panel's flowing edge handles reduced-motion in JS — it simply never
+   starts its rAF loop, mirroring the background.) */
 @media (prefers-reduced-motion: reduce) {
   [data-menu-selector] {
     transition: none !important;

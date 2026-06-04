@@ -13,20 +13,28 @@
 // P3R water background (mounted in layout.tsx) keeps showing through.
 
 import { useEffect, useState } from 'react'
+import { LeftPanel } from './LeftPanel'
 import { Selector } from './Selector'
 import {
   AUTOCYCLE_MS,
   ITEM_STYLES,
   ITEM_TRANSITION_MS,
   MENU_ITEMS,
+  MENU_INACTIVE_FONT,
+  MENU_LIST_PAD_LEFT_VW,
+  MENU_SELECTED_FONT,
+  MENU_ZONE_WIDTH,
   SELECTED_BLACK,
   SELECTED_RED,
   SELECTED_Z,
+  SHOW_LEFT_PANEL,
+  LABEL_FONT,
+  LABEL_LEFT_VW,
+  LABEL_OFFSET_VH,
+  LABEL_OPACITY,
+  VERTICAL_LABEL,
   shapeClipPath,
 } from './constants'
-
-const SELECTED_SIZE = 'text-5xl sm:text-6xl lg:text-7xl'
-const INACTIVE_SIZE = 'text-4xl sm:text-5xl lg:text-6xl'
 
 export function MainMenu() {
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -44,16 +52,41 @@ export function MainMenu() {
 
   return (
     <main className="fixed inset-0 z-0 overflow-hidden bg-transparent select-none">
-      {/* Zone A — left ~42%: reserved for the laptop illustration (task 04). */}
-      <div
-        className="absolute inset-y-0 left-0 z-0 w-[42%]"
-        aria-hidden
-        // Placeholder bounds for the floating laptop / developer machine.
-      />
+      {/* Left visual — the flat white region with its organic, flowing water edge
+          (z-0, in front of the z:-1 water canvas, behind the z-10 menu text),
+          taking the role P3R gives its character art, plus the giant black
+          vertical name on it. SHOW_LEFT_PANEL toggles the whole thing off. */}
+      {SHOW_LEFT_PANEL && (
+        <>
+          <LeftPanel />
+
+          {/* Giant black vertical name, sitting on the white region. It runs
+              vertical and is sized so its bottom tail spills past the viewport
+              (clipped by main's overflow-hidden). */}
+          <div
+            aria-hidden
+            className="absolute z-[1] font-display leading-none text-black uppercase"
+            style={{
+              left: `${LABEL_LEFT_VW}vw`,
+              top: `calc(50% + ${LABEL_OFFSET_VH}vh)`,
+              transform: 'translateY(-50%)',
+              opacity: LABEL_OPACITY,
+              writingMode: 'vertical-rl',
+              fontSize: LABEL_FONT,
+              letterSpacing: '0.01em',
+            }}
+          >
+            {VERTICAL_LABEL}
+          </div>
+        </>
+      )}
 
       {/* Zone B — right side: the vertical menu list, left-aligned so every
           item shares a common left edge, set in from the zone's left margin. */}
-      <nav className="absolute inset-y-0 right-0 z-10 flex w-[58%] flex-col justify-center pl-[4vw]">
+      <nav
+        className="absolute inset-y-0 right-0 z-10 flex flex-col justify-center"
+        style={{ width: MENU_ZONE_WIDTH, paddingLeft: `${MENU_LIST_PAD_LEFT_VW}vw` }}
+      >
         <ul className="flex flex-col items-start text-left">
           {MENU_ITEMS.map((item, i) => {
             const isSelected = i === selectedIndex
@@ -64,9 +97,10 @@ export function MainMenu() {
                 data-menu-item={item}
                 data-selected={isSelected}
                 className={`font-display leading-none tracking-wide uppercase ${
-                  isSelected ? SELECTED_SIZE : INACTIVE_SIZE
-                } ${isSelected ? 'relative' : ''}`}
+                  isSelected ? 'relative' : ''
+                }`}
                 style={{
+                  fontSize: isSelected ? MENU_SELECTED_FONT : MENU_INACTIVE_FONT,
                   marginTop: i === 0 ? 0 : s.overlapY,
                   transform: `translateX(${s.nudgeX}px) rotate(${s.angleDeg}deg)`,
                   transformOrigin: 'left center',
@@ -120,19 +154,9 @@ export function MainMenu() {
         </ul>
       </nav>
 
-      {/* Zone C — bottom bar: index panel (lower-left) + selected-section info
-          with the nav prompts stacked beneath it (lower-right). */}
-      <div className="absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-4 px-[4vw] pb-6">
-        {/* Lower-left: main index panel placeholder (built in task 05). */}
-        <div
-          className="w-fit border border-dashed border-white/30 px-3 py-2 font-display text-sm leading-tight tracking-widest text-white/60"
-          data-placeholder="main-index"
-        >
-          MAIN
-          <br />
-          01
-        </div>
-
+      {/* Zone C — bottom bar: selected-section info with the nav prompts stacked
+          beneath it (lower-right). */}
+      <div className="absolute inset-x-0 bottom-0 z-20 flex items-end justify-end gap-4 px-[4vw] pb-6">
         {/* Lower-right: selected-section tooltip placeholder (wired in task 05),
             with the navigation prompts directly below it. */}
         <div className="flex flex-col items-end gap-2 text-right">
