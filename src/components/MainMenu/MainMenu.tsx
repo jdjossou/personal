@@ -13,6 +13,7 @@
 // P3R water background (mounted in layout.tsx) keeps showing through.
 
 import { useEffect, useState } from 'react'
+import { InfoBlock } from './InfoBlock'
 import { LeftPanel } from './LeftPanel'
 import { Selector } from './Selector'
 import {
@@ -28,6 +29,7 @@ import {
   SELECTED_RED,
   SELECTED_Z,
   SHOW_LEFT_PANEL,
+  SHOW_SYSTEM_PANELS,
   LABEL_FONT,
   LABEL_LEFT_VW,
   LABEL_OFFSET_VH,
@@ -154,18 +156,13 @@ export function MainMenu() {
         </ul>
       </nav>
 
-      {/* Zone C — bottom bar: selected-section info with the nav prompts stacked
-          beneath it (lower-right). */}
+      {/* Zone C — bottom bar: the selected-section info block with the nav
+          prompts stacked beneath it (lower-right), driven by `selectedIndex`. */}
       <div className="absolute inset-x-0 bottom-0 z-20 flex items-end justify-end gap-4 px-[4vw] pb-6">
-        {/* Lower-right: selected-section tooltip placeholder (wired in task 05),
-            with the navigation prompts directly below it. */}
+        {/* Lower-right: selected-section info block with the navigation prompts
+            directly below it. */}
         <div className="flex flex-col items-end gap-2 text-right">
-          <div
-            className="border border-dashed border-white/30 px-3 py-2 font-mono text-xs tracking-wide text-white/40"
-            data-placeholder="section-tooltip"
-          >
-            selected-section info
-          </div>
+          {SHOW_SYSTEM_PANELS && <InfoBlock selectedIndex={selectedIndex} />}
 
           {/* Navigation prompts (desktop). */}
           <div

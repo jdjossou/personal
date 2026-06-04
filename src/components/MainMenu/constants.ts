@@ -90,6 +90,46 @@ export const shapeSvgPoints = (): string =>
 export const shapeClipPath = (): string =>
   `polygon(${SELECTOR_SHAPE.map(([x, y]) => `${x}% ${y}%`).join(', ')})`
 
+// --- System info panels (Task 05) ------------------------------------------
+// The two game-HUD readouts that update with `selectedIndex`: a white skewed
+// index badge (MAIN / 01) in the lower-left, and a title + subtitle-with-
+// trailing-line info block (View Projects / Quest Log ───) in the lower-right.
+// Master toggle, mirroring SHOW_LEFT_PANEL.
+export const SHOW_SYSTEM_PANELS = true
+
+// Per-item content, indices aligned to MENU_ITEMS (0 = PROJECTS … 4 = ASKME).
+export type SectionInfo = {
+  index: string // two-digit readout, e.g. '01'
+  title: string // "View …" line
+  subtitle: string // Persona-style category label
+}
+export const SECTION_INFO: readonly SectionInfo[] = [
+  { index: '01', title: 'View Projects', subtitle: 'Commands' },
+  { index: '02', title: 'View Education', subtitle: 'Commands' },
+  { index: '03', title: 'View Experience', subtitle: 'Commands' },
+  { index: '04', title: 'View Stack', subtitle: 'Commands' },
+  { index: '05', title: 'Ask Juniel', subtitle: 'Commands' },
+] as const
+
+// The constant label above the number in the index badge.
+export const INDEX_PANEL_LABEL = 'MAIN'
+// The badge is a sharp parallelogram (slanted left/right edges) cut from a white
+// fill, with dark text. clip-path in the 0–100% box (x y per corner).
+export const INDEX_PANEL_CLIP = 'polygon(12% 0, 100% 0, 88% 100%, 0% 100%)'
+export const INDEX_PANEL_WHITE = SELECTOR_WHITE
+export const INDEX_PANEL_TEXT = SELECTED_BLACK
+// Brief scale-pulse when the number changes (snappy, not a crossfade).
+export const PANEL_PULSE_MS = 110
+
+// Info-block colours: bright title, muted pale-blue subtitle + trailing line.
+export const INFO_TITLE_COLOR = '#F2F8FF'
+export const INFO_SUBTITLE_COLOR = '#9CC6EE'
+// Trailing line after the subtitle (em-dash run reads as part of the UI frame).
+export const INFO_TRAILING = '───────────────'
+// Quick fade-out → fade-in on change (game-like, short).
+export const INFO_FADE_OUT_MS = 80
+export const INFO_FADE_IN_MS = 120
+
 // --- Left panel (Task 04) --------------------------------------------------
 // The left side of the menu is a flat WHITE region whose right edge is an
 // organic, gently-flowing curve (not a straight line) — taking the role the
