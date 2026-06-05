@@ -7,7 +7,7 @@ import { DEFAULT_P3R_CONFIG, type P3RConfig } from '@/components/P3RBackground/c
 
 // --- Copy ------------------------------------------------------------------
 export const NAME = 'Juniel Djossou'
-export const ROLE_LABEL = '// Software Engineer · CS Student'
+export const ROLE_LABEL = '// Software Engineer · CS @ UWATERLOO'
 // Subtle, unobtrusive mention of the word "portfolio" (system-tag styled).
 export const PORTFOLIO_TAG = '// portfolio'
 
