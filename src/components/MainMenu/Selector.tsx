@@ -31,14 +31,29 @@ function Shape({ fill }: { fill: string }) {
   )
 }
 
-export function Selector() {
+// `spawnDelay` (Task 07): on the menu opening, the selector is held hidden until
+// PROJECTS' text has settled, then snaps in. On later selection changes it is 0
+// so the twitch replays instantly. The twitch keyframe starts at opacity 0, so a
+// non-zero animation-delay keeps the (also opacity-0) base hidden until it fires.
+export function Selector({ spawnDelay = 0 }: { spawnDelay?: number }) {
   return (
     <div
       aria-hidden
       data-menu-selector
       className="pointer-events-none absolute inset-0 -z-10"
-      // Entrance jolt — replays on mount (i.e. on each selection change).
-      style={{ animation: `selector-twitch ${TWITCH_MS}ms ease-out` }}
+      // Entrance jolt — replays on mount (i.e. on each selection change). With a
+      // spawn delay we start hidden and hold until the twitch fires; with no
+      // delay we leave opacity at its default so reduced-motion (which strips the
+      // animation in globals.css) still shows the selector.
+      style={
+        spawnDelay > 0
+          ? {
+              opacity: 0,
+              animation: `selector-twitch ${TWITCH_MS}ms ease-out ${spawnDelay}ms`,
+              animationFillMode: 'forwards',
+            }
+          : { animation: `selector-twitch ${TWITCH_MS}ms ease-out` }
+      }
     >
       {/* Idle wobble — perpetual, subtle. */}
       <div

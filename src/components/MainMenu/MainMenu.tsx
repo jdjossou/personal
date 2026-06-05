@@ -38,6 +38,14 @@ import {
   LABEL_OPACITY,
   VERTICAL_LABEL,
   shapeClipPath,
+  MENU_ENTER_MS,
+  MENU_ENTER_STAGGER_MS,
+  MENU_ENTER_OFFSET_PX,
+  SELECTOR_SPAWN_DELAY_MS,
+  PANELS_ENTER_MS,
+  PANELS_ENTER_DELAY_MS,
+  PANELS_ENTER_OFFSET_PX,
+  SEQUENCE_TOTAL_MS,
 } from './constants'
 
 type MainMenuProps = {
@@ -62,6 +70,36 @@ export function MainMenu({ onBack }: MainMenuProps) {
     () => window.matchMedia('(pointer: coarse)').matches,
     () => false,
   )
+  // Reduced-motion preference, committed once at load (same useSyncExternalStore
+  // pattern as isTouch). When set, the opening sequence (Task 07) is skipped and
+  // every element renders in its final state with no entrance transition.
+  const reducedMotion = useSyncExternalStore(
+    NO_SUBSCRIBE,
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false,
+  )
+  // Opening sequence (Task 07). `entered` drives every element's entrance: it
+  // starts false (items hidden + offset below) and flips true one frame after
+  // mount, so the CSS transitions play. `opening` is a one-time window used only
+  // to give the selector its spawn delay; it clears once the run has finished.
+  const [entered, setEntered] = useState(false)
+  const [opening, setOpening] = useState(true)
+  useEffect(() => {
+    // Double rAF so the initial opacity:0 / offset frame paints before we flip.
+    // Under reduced motion the entrance transitions are disabled at render time,
+    // so this same flip just snaps to the final state with no visible motion.
+    let raf2 = 0
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setEntered(true))
+    })
+    const done = window.setTimeout(() => setOpening(false), SEQUENCE_TOTAL_MS)
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+      window.clearTimeout(done)
+    }
+  }, [])
+
   const rootRef = useRef<HTMLElement>(null)
   // Mirror the latest selectedIndex / onBack so the keydown listener can read
   // them without re-subscribing on every change. Synced in effects (not during
@@ -128,6 +166,8 @@ export function MainMenu({ onBack }: MainMenuProps) {
           taking the role P3R gives its character art, plus the giant black
           vertical name on it. SHOW_LEFT_PANEL toggles the whole thing off. */}
       {SHOW_LEFT_PANEL && (
+        // The left visual has no entrance — it's present from the start (Task 07
+        // animates only the menu text, selector, and system panels).
         <>
           <LeftPanel />
 
@@ -175,16 +215,32 @@ export function MainMenu({ onBack }: MainMenuProps) {
                 style={{
                   fontSize: isSelected ? MENU_SELECTED_FONT : MENU_INACTIVE_FONT,
                   marginTop: i === 0 ? 0 : s.overlapY,
-                  transform: `translateX(${s.nudgeX}px) rotate(${s.angleDeg}deg)`,
+                  // Entrance (Task 07, Step 2): rise from MENU_ENTER_OFFSET_PX
+                  // below + fade in, staggered top→bottom. The per-item transform
+                  // is constant (depends on i, not selection), so folding the
+                  // entrance translateY in here never fights selection swaps.
+                  opacity: entered ? 1 : 0,
+                  transform: `translateX(${s.nudgeX}px) translateY(${
+                    entered ? 0 : MENU_ENTER_OFFSET_PX
+                  }px) rotate(${s.angleDeg}deg)`,
                   transformOrigin: 'left center',
                   zIndex: isSelected ? SELECTED_Z : s.z,
-                  transition: `font-size ${ITEM_TRANSITION_MS}ms ease-out`,
+                  transition: reducedMotion
+                    ? `font-size ${ITEM_TRANSITION_MS}ms ease-out`
+                    : `font-size ${ITEM_TRANSITION_MS}ms ease-out, opacity ${MENU_ENTER_MS}ms ease-out ${
+                        i * MENU_ENTER_STAGGER_MS
+                      }ms, transform ${MENU_ENTER_MS}ms ease-out ${i * MENU_ENTER_STAGGER_MS}ms`,
                 }}
               >
                 {isSelected ? (
                   <>
-                    {/* Two angular shapes behind the text (white over red). */}
-                    <Selector />
+                    {/* Two angular shapes behind the text (white over red). On
+                        the opening the selector is held back until PROJECTS'
+                        text settles (Task 07, Step 3); afterwards it snaps in
+                        instantly on each selection change. */}
+                    <Selector
+                      spawnDelay={opening && !reducedMotion ? SELECTOR_SPAWN_DELAY_MS : 0}
+                    />
                     {/* Black base — defines the box; visible outside the triangle. */}
                     <span
                       className="relative block"
@@ -231,8 +287,19 @@ export function MainMenu({ onBack }: MainMenuProps) {
           prompts stacked beneath it (lower-right), driven by `selectedIndex`. */}
       <div className="absolute inset-x-0 bottom-0 z-20 flex items-end justify-end gap-4 px-[4vw] pb-6">
         {/* Lower-right: selected-section info block with the navigation prompts
-            directly below it. */}
-        <div className="flex flex-col items-end gap-2 text-right">
+            directly below it. Entrance (Task 07, Step 4): the whole column fades
+            and slides up shortly after the run begins — the wrapper handles the
+            entrance so InfoBlock's own selection-change fade stays untouched. */}
+        <div
+          className="flex flex-col items-end gap-2 text-right"
+          style={{
+            opacity: entered ? 1 : 0,
+            transform: `translateY(${entered ? 0 : PANELS_ENTER_OFFSET_PX}px)`,
+            transition: reducedMotion
+              ? undefined
+              : `opacity ${PANELS_ENTER_MS}ms ease-out ${PANELS_ENTER_DELAY_MS}ms, transform ${PANELS_ENTER_MS}ms ease-out ${PANELS_ENTER_DELAY_MS}ms`,
+          }}
+        >
           {SHOW_SYSTEM_PANELS && <InfoBlock selectedIndex={selectedIndex} />}
 
           {/* Navigation prompts — pointer-based: coarse pointers get the tap

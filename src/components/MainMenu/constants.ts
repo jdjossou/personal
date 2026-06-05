@@ -181,3 +181,32 @@ export const LABEL_OFFSET_VH = 0
 // Horizontal offset of the name, in vw. Negative pushes it off the left edge of
 // the screen (so the left side of the letters runs out of view).
 export const LABEL_LEFT_VW = -30
+
+// --- Opening sequence (Task 07) --------------------------------------------
+// One coordinated entrance fired on mount: staggered text rise, selector snap,
+// panels sliding up, and the left visual fading in. Timings are tuned so the
+// whole thing reads as a fast "summon" (< ~1.1s), not a load. Each element's
+// entrance is a plain CSS transition off a single `entered` flag flipped one
+// frame after mount; the values below feed those transitions. Honour
+// reduced-motion by skipping the whole sequence.
+
+// Menu text (Step 2): each item rises MENU_ENTER_OFFSET_PX from below and fades
+// in over MENU_ENTER_MS, staggered top→bottom by MENU_ENTER_STAGGER_MS.
+export const MENU_ENTER_MS = 200
+export const MENU_ENTER_STAGGER_MS = 70
+export const MENU_ENTER_OFFSET_PX = 12
+
+// Selector (Step 3): held hidden this long on the opening so it snaps in just
+// after PROJECTS' text settles (≈ 0×stagger + MENU_ENTER_MS). Later selection
+// changes pass 0 so the twitch replays instantly.
+export const SELECTOR_SPAWN_DELAY_MS = 260
+
+// System panels (Step 4): the lower-right info block + nav prompts fade and
+// slide up PANELS_ENTER_OFFSET_PX, beginning PANELS_ENTER_DELAY_MS into the run.
+export const PANELS_ENTER_MS = 200
+export const PANELS_ENTER_DELAY_MS = 150
+export const PANELS_ENTER_OFFSET_PX = 10
+
+// Clears the one-time "opening" flag (only used to gate the selector spawn
+// delay) once every entrance above has comfortably finished.
+export const SEQUENCE_TOTAL_MS = 1100
