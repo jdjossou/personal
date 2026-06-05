@@ -17,6 +17,54 @@ export const PORTFOLIO_TAG = '// portfolio'
 // concern (swap PROMPT_WORDS behind a touch check).
 export const PROMPT_WORDS = ['PRESS', 'ANY', 'BUTTON'] as const
 
+// --- Prompt sweep animation (Task 03) — tunables ---------------------------
+// The PRESS ANY BUTTON title runs the Persona 3 Reload "attract" effect: a
+// TWO-STATE diagonal WIPE loop (not a continuous shimmer). It holds fully solid
+// white, then a GROUP of parallel forward-slash "/" strips sweeps left→right
+// across the whole block, flipping it to the second state — TRANSPARENT fill with
+// a thin white outline (the blue water shows through the letters, which stay
+// readable). It holds there, then the same grouped sweep plays again (same
+// direction) flipping it back to solid white. Loop.
+//
+// This block holds only the plain tuning VALUES. The maths that turns them into
+// the gradient string + the px/seconds the `prompt-sweep` keyframe needs lives in
+// ./promptSweep.ts (kept out of here so this file stays React/DOM/logic-free).
+
+// Diagonal slant of the "/" strips (deg, CSS gradient convention). ~120 leans the
+// strips like forward slashes; 90 = vertical, 180 = horizontal.
+export const SWEEP_ANGLE = 120
+
+// --- Timing — the two intuitive knobs --------------------------------------
+// How long the title rests FULLY in each state (solid white, then transparent)
+// before the next sweep, in seconds.
+export const SWEEP_HOLD_S = 1.5
+// How long ONE diagonal sweep takes to cross the whole title, in seconds — i.e.
+// the sweep speed (smaller = faster wipe). Together these define the whole loop:
+// total cycle = 2 × (hold + wipe). Both are honoured exactly (see promptSweep.ts).
+export const SWEEP_WIPE_S = 1.7
+
+// White outline thickness, kept on the glyphs at all times so the transparent
+// state reads as a hollow outline rather than vanishing. Tuned for the huge size.
+export const SWEEP_STROKE = '1.5px'
+
+// --- Strip group geometry (px, measured along the diagonal axis) -----------
+// One "/" strip (slash) thickness, the gap between strips within a group, and how
+// many slashes travel together. Spread wide (big gaps) so several distinct slashes
+// sit across the text at once and read as one travelling group, not a single edge.
+export const SWEEP_STRIP_PX = 30
+export const SWEEP_GAP_PX = 74
+export const SWEEP_STRIP_COUNT = 3
+
+// Reference diagonal extent of the title (px), used to size the solid hold bands
+// so the WHOLE block is uniform during a hold. Set near the LARGEST the title gets
+// (around the font clamp ceiling); bigger is safe — it just makes holds slightly
+// longer / sweeps slightly faster on smaller screens. Rarely needs changing.
+export const SWEEP_TEXT_EXTENT_PX = 820
+
+// Rest-alignment offset (px, horizontal): nudges which part of the pattern sits
+// over the text at the loop's start. Tune by screenshot. Fed as `--sweep-phase`.
+export const SWEEP_PHASE_PX = 0
+
 // --- Background (Task 02) — landing water variant --------------------------
 // The landing reuses the site's animated P3R water (P3RBackground) instead of a
 // separate artwork, but mounts its OWN instance with a darker, calmer config so

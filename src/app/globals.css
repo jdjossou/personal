@@ -53,6 +53,24 @@ body {
   }
 }
 
+/* Landing PRESS ANY BUTTON two-state wipe (Task 03). The prompt's fill is a
+   symmetric 4-segment diagonal gradient clipped to the text (built in
+   constants.ts): [white flat | "/" strip group | transparent flat | "/" strip
+   group]. This keyframe slides it left→right by exactly one full period
+   (--sweep-tile) at CONSTANT velocity, looping seamlessly. The holds and the
+   sweeps are produced by GEOMETRY, not timing: while a wide flat slides under the
+   text the whole title is uniformly one state (a hold); the visible diagonal
+   sweep happens only while a strip group crosses, flipping white⇄transparent.
+   --sweep-phase offsets where the cycle starts. Linear keeps the sweep even. */
+@keyframes prompt-sweep {
+  from {
+    background-position-x: var(--sweep-phase);
+  }
+  to {
+    background-position-x: calc(var(--sweep-phase) + var(--sweep-tile));
+  }
+}
+
 /* Honour reduced-motion: drop the twitch/idle wobble and let the selector snap
    into place instantly, matching how the P3R background freezes its animation.
    (The left panel's flowing edge handles reduced-motion in JS — it simply never
@@ -63,6 +81,18 @@ body {
   }
   [data-menu-selector] * {
     animation: none !important;
+  }
+  /* Static fallback for the title sweep: freeze the animation, drop the diagonal
+     gradient + outline, and paint the glyphs solid white so the prompt stays
+     fully readable without the shimmer. Targets the per-word spans (where the
+     sweep now lives) as well as the container. */
+  [data-press-any-key],
+  [data-press-any-key] span {
+    animation: none !important;
+    background-image: none !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    -webkit-text-stroke-width: 0 !important;
   }
 }
 

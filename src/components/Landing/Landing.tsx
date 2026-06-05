@@ -35,7 +35,10 @@ import {
   PROMPT_LINE_HEIGHT,
   PROMPT_WORDS,
   ROLE_LABEL,
+  SWEEP_PHASE_PX,
+  SWEEP_STROKE,
 } from './constants'
+import { PROMPT_SWEEP_GRADIENT, SWEEP_CYCLE, SWEEP_TRANSLATE_PX } from './promptSweep'
 
 type LandingProps = {
   // Switches the app from the landing screen into the main menu. Receives the
@@ -97,16 +100,42 @@ export function Landing({ onStart }: LandingProps) {
           {PORTFOLIO_TAG}
         </p>
 
-        {/* Centerpiece — the largest text on screen. Each word is its own block
-            (targetable for Task 03's scan-line foreground). */}
+        {/* Centerpiece — the largest text on screen, running the Task 03 wipe.
+            ONE diagonal gradient clipped to the whole block (`background-clip:
+            text`) so the sweep is a single coherent diagonal across all three
+            words; a permanent white text-stroke keeps the letters outlined in the
+            transparent state (water showing through the interiors). The
+            `prompt-sweep` keyframe (globals.css) holds on a solid state, dashes
+            half a period so a group of "/" strips wipes the block to the other
+            state, holds, then dashes the second half back. `--sweep-tile` is the
+            full horizontal period; `--sweep-phase` aligns a hold over the text.
+            Reduced motion falls back to solid white (media query in globals.css). */}
         <div
           data-press-any-key
-          className="font-display tracking-tight text-white uppercase"
-          style={{
-            fontSize: PROMPT_FONT,
-            lineHeight: PROMPT_LINE_HEIGHT,
-            marginTop: `${PROMPT_GAP_REM}rem`,
-          }}
+          className="font-display tracking-tight uppercase"
+          style={
+            {
+              fontSize: PROMPT_FONT,
+              lineHeight: PROMPT_LINE_HEIGHT,
+              marginTop: `${PROMPT_GAP_REM}rem`,
+              backgroundImage: PROMPT_SWEEP_GRADIENT,
+              // Size the background to exactly one full horizontal period so the
+              // whole pattern (both flats + both strip groups) lives in the image
+              // and scrolls into view. With `auto`, the image is only box-sized —
+              // narrower than a single flat — so the transparent flat is clipped
+              // off-canvas and the title never leaves the white state.
+              backgroundSize: `${SWEEP_TRANSLATE_PX}px 100%`,
+              backgroundRepeat: 'repeat',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+              WebkitTextFillColor: 'transparent',
+              WebkitTextStroke: `${SWEEP_STROKE} #fff`,
+              '--sweep-tile': `${SWEEP_TRANSLATE_PX}px`,
+              '--sweep-phase': `${SWEEP_PHASE_PX}px`,
+              animation: `prompt-sweep ${SWEEP_CYCLE} linear infinite`,
+            } as React.CSSProperties
+          }
         >
           {PROMPT_WORDS.map((word) => (
             <span key={word} className="block">
