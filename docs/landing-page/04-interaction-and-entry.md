@@ -2,7 +2,7 @@
 
 ### Goal
 
-Make the landing screen functional: any key press (or tap/click) dismisses the start screen and enters the site, transitioning into the main menu. This wires the "PRESS ANY KEY / Tap anywhere" promise to actual behaviour.
+Make the landing screen functional: any key press (or tap/click) dismisses the start screen and enters the site, transitioning into the main menu. This wires the "PRESS ANY BUTTON" promise to actual behaviour.
 
 ---
 
@@ -20,15 +20,6 @@ The whole screen is the activation target — the visitor does not need to aim a
 
 ---
 
-### Responsive Copy
-
-The prompt copy adapts to the input device (hook left in Task 01):
-
-- Pointer / keyboard devices: `PRESS ANY KEY`
-- Touch devices: `TAP ANYWHERE`
-
----
-
 ### Entry Transition
 
 Activating the landing screen transitions the visitor into the main menu.
@@ -42,7 +33,7 @@ Activating the landing screen transitions the visitor into the main menu.
 ### Optional Polish
 
 - A short confirm sound on activation, consistent with the main menu's sound behaviour (and respecting any global sound toggle / muted-by-default policy).
-- Briefly intensify or "snap" the PRESS ANY KEY animation on activation before the transition begins.
+- Briefly intensify or "snap" the PRESS ANY BUTTON animation on activation before the transition begins.
 
 These are optional and should not block the core entry behaviour.
 
@@ -61,6 +52,5 @@ At the end of this task:
 
 - Any key, click, or tap (outside the external links) dismisses the landing screen.
 - External links remain independently clickable.
-- The prompt copy reads `PRESS ANY KEY` on pointer devices and `TAP ANYWHERE` on touch devices.
 - Activation triggers a clean, game-like transition into the main menu, firing exactly once.
 - Optional sound / animation polish and a reduced-motion fallback.

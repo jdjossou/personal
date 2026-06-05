@@ -71,6 +71,31 @@ body {
   }
 }
 
+/* Activation snap (Task 04). On entry the looping wipe is replaced by this
+   one-shot flash: the title pops to a solid, bright white fill and scales up a
+   touch, then settles — a deliberate "confirm" beat before the wavyBlot cut.
+   Overrides the sweep's transparent fill / clip so the glyphs read fully white
+   for the flash. `forwards` holds the settled state for the brief moment before
+   the screen transitions away. Auto-disabled under reduced motion by the
+   [data-press-any-key] rule below. */
+@keyframes prompt-snap {
+  0% {
+    transform: scale(1);
+    -webkit-text-fill-color: #fff;
+    filter: brightness(1.9);
+  }
+  45% {
+    transform: scale(1.04);
+    -webkit-text-fill-color: #fff;
+    filter: brightness(2.2);
+  }
+  100% {
+    transform: scale(1);
+    -webkit-text-fill-color: #fff;
+    filter: brightness(1);
+  }
+}
+
 /* Honour reduced-motion: drop the twitch/idle wobble and let the selector snap
    into place instantly, matching how the P3R background freezes its animation.
    (The left panel's flowing edge handles reduced-motion in JS — it simply never

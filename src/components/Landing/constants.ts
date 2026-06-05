@@ -65,6 +65,15 @@ export const SWEEP_TEXT_EXTENT_PX = 820
 // over the text at the loop's start. Tune by screenshot. Fed as `--sweep-phase`.
 export const SWEEP_PHASE_PX = 0
 
+// --- Activation snap (Task 04) ---------------------------------------------
+// On entry (any key / click / tap) the title briefly "snaps" — the looping wipe
+// is swapped for a one-shot `prompt-snap` flash — before the wavyBlot transition
+// begins. This is BOTH the snap animation's duration and the delay before the
+// hand-off fires, so the snap is fully seen before the screen cuts away. Skipped
+// under prefers-reduced-motion (hand-off fires immediately). Keep it short so
+// entry still feels instant. Milliseconds.
+export const SNAP_MS = 140
+
 // --- Background (Task 02) — landing water variant --------------------------
 // The landing reuses the site's animated P3R water (P3RBackground) instead of a
 // separate artwork, but mounts its OWN instance with a darker, calmer config so

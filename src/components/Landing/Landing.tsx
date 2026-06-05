@@ -14,8 +14,9 @@
 // Enter) is preserved so the app keeps working end-to-end. All tunables live in
 // constants.ts.
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { centerOrigin, originFromEvent, type Origin } from '@/components/Transitions/handoff'
+import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
 import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
 import { LinkIcon } from './icons'
 import {
@@ -35,6 +36,7 @@ import {
   PROMPT_LINE_HEIGHT,
   PROMPT_WORDS,
   ROLE_LABEL,
+  SNAP_MS,
   SWEEP_PHASE_PX,
   SWEEP_STROKE,
 } from './constants'
@@ -46,23 +48,78 @@ type LandingProps = {
   onStart: (origin: Origin) => void
 }
 
+// Modifier / navigation keys that must NOT count as "any key": bare modifiers
+// would fire spuriously, and Tab is reserved so keyboard users can still reach
+// the external links instead of entering on their first keystroke (Task 04
+// accessibility decision).
+const IGNORED_KEYS = new Set([
+  'Tab',
+  'Shift',
+  'Control',
+  'Alt',
+  'Meta',
+  'CapsLock',
+])
+
 export function Landing({ onStart }: LandingProps) {
-  // Enter key starts the menu (mask grows from screen centre). Removed on unmount
-  // so it never leaks into the menu screen's own key handling.
+  // `entering` swaps the looping wipe for the one-shot snap; the refs guard the
+  // hand-off so it fires EXACTLY ONCE (a held key, a tap that also clicks, or a
+  // rapid double-click can otherwise re-trigger) and let us clear the pending
+  // snap timer on unmount.
+  const [entering, setEntering] = useState(false)
+  const firedRef = useRef(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Resume the (lazily-created) AudioContext on the first gesture so the confirm
+  // blip below is audible on the very interaction that triggers entry — mirrors
+  // the MainMenu pattern. Clear any pending snap timer on unmount.
+  useEffect(() => {
+    initAudioOnGesture()
+    return () => {
+      if (timerRef.current != null) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  // The single entry path for every activation source. Plays the confirm sound,
+  // snaps the prompt, then hands off into the menu (wavyBlot armed by the parent).
+  // Reduced motion skips the snap delay — ScreenReveal already gives the simpler
+  // transition there.
+  const activate = useCallback(
+    (origin: Origin) => {
+      if (firedRef.current) return
+      firedRef.current = true
+
+      playSound('confirm')
+      setEntering(true)
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (reduced) {
+        onStart(origin)
+        return
+      }
+      timerRef.current = setTimeout(() => onStart(origin), SNAP_MS)
+    },
+    [onStart],
+  )
+
+  // Any key starts the menu (mask grows from screen centre), except auto-repeat
+  // from a held key, the ignored navigation/modifier keys, and shortcut combos
+  // (⌘R, ⌘Tab, …) which stay with the browser. Removed on unmount so it never
+  // leaks into the menu screen's own key handling.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        onStart(centerOrigin())
-      }
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return
+      if (IGNORED_KEYS.has(e.key)) return
+      e.preventDefault()
+      activate(centerOrigin())
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onStart])
+  }, [activate])
 
   return (
     <main
-      onClick={(e) => onStart(originFromEvent(e))}
+      onClick={(e) => activate(originFromEvent(e))}
       className="fixed inset-0 z-0 cursor-pointer overflow-hidden select-none"
     >
       {/* Task 02 — the landing's own darker/calmer instance of the P3R water,
@@ -133,7 +190,11 @@ export function Landing({ onStart }: LandingProps) {
               WebkitTextStroke: `${SWEEP_STROKE} #fff`,
               '--sweep-tile': `${SWEEP_TRANSLATE_PX}px`,
               '--sweep-phase': `${SWEEP_PHASE_PX}px`,
-              animation: `prompt-sweep ${SWEEP_CYCLE} linear infinite`,
+              // On activation, swap the perpetual wipe for the one-shot snap flash
+              // (held by `forwards`) for the brief beat before the screen cuts away.
+              animation: entering
+                ? `prompt-snap ${SNAP_MS}ms ease-out forwards`
+                : `prompt-sweep ${SWEEP_CYCLE} linear infinite`,
             } as React.CSSProperties
           }
         >
