@@ -123,14 +123,23 @@ export const STATUS_COLOR: Record<ProjectStatus, string> = {
   DONE: '#3FB96B',
 }
 
-// Sharp parallelogram cut for the badge fill — angular Persona chip, never a
-// soft pill (mirrors MainMenu's INDEX_PANEL_CLIP). x y per corner in a 0–100% box.
-export const BADGE_CLIP = 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)'
-
 // Cap how many tags render inline in a row before the rest collapse to a "+N"
 // counter, so a tag-heavy project never blows out the column.
 export const MAX_ROW_TAGS = 4
 
-// Zero-padded quest number derived from array order: 0 → '/01', 9 → '/10'.
+// --- Selection accent (Task 03) --------------------------------------------
+// The active quest row is a soft, rounded crimson chip with a white left marker
+// — the table-row analogue of MainMenu's vertical selector triangle (and what
+// reference.png shows for a highlighted quest row). A deep, slightly muted and
+// translucent crimson (not MainMenu's hot #E01010) so the highlight reads as
+// "selected" without shouting. Rendered as the row's own background (not an
+// overlay) so it shares the exact rounded shape of every other row chip.
+export const SELECT_BAND_FILL = 'rgba(163, 22, 33, 0.82)' // soft translucent crimson
+export const SELECT_MARKER_WHITE = '#FFFFFF' // mirrors MainMenu SELECTOR_WHITE
+
+// Static section label in the detail readout's links block (Task 03).
+export const LINKS_LABEL = 'Links'
+
+// Zero-padded quest number derived from array order: 0 → '01', 9 → '10'.
 export const formatIndex = (i: number): string =>
-  `/${String(i + 1).padStart(2, '0')}`
+  String(i + 1).padStart(2, '0')
