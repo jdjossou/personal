@@ -119,6 +119,9 @@ export type P3RConfig = {
   }
   blur: { sigma: number }
   steppedFps: number
+  // Scale on Layer 8's additive corner glow (1 = default; 0 = off). Lower it to
+  // keep the bright corner from lifting above the rest of the frame.
+  lightGlow: number
 }
 
 export const DEFAULT_P3R_CONFIG: P3RConfig = {
@@ -129,4 +132,5 @@ export const DEFAULT_P3R_CONFIG: P3RConfig = {
   caustic2: CAUSTIC2,
   blur: BLUR,
   steppedFps: STEPPED_FPS,
+  lightGlow: 1,
 }

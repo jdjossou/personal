@@ -48,6 +48,7 @@ export function useP3RBackground(
       caustic2: CAUSTIC2,
       blur: BLUR,
       steppedFps: STEPPED_FPS,
+      lightGlow: LIGHT_GLOW,
     } = config
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false })
@@ -250,6 +251,9 @@ export function useP3RBackground(
       blending: THREE.AdditiveBlending, // can only brighten the frame
       depthTest: false,
       depthWrite: false,
+      uniforms: {
+        uIntensity: { value: LIGHT_GLOW },
+      },
     })
 
     function renderPass(

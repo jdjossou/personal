@@ -298,6 +298,8 @@ export const darkGradientFrag = /* glsl */ `
 export const lightGradientFrag = /* glsl */ `
   precision highp float;
 
+  uniform float uIntensity; // global scale on the glow (1 = default; 0 = off)
+
   varying vec2 vUv;
 
   void main() {
@@ -313,7 +315,7 @@ export const lightGradientFrag = /* glsl */ `
 
     // Remap 0.468 -> 1.0 into 0.0 -> 1.0, then ramp both colour and alpha.
     float t = (gradPos - 0.468) / 0.532;
-    float alpha = mix(0.0, 0.392, t);
+    float alpha = mix(0.0, 0.392, t) * uIntensity;
     vec3 col = mix(vec3(0.282, 0.427, 0.867), vec3(0.0, 0.988, 0.949), t);
 
     // Premultiply for additive blending (src.rgb * src.alpha + dst.rgb).

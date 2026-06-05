@@ -63,6 +63,9 @@ export const LANDING_WATER: P3RConfig = {
   // Softer focus + a slightly slower shimmer cadence so it reads distinct.
   blur: { sigma: 1.7 },
   steppedFps: 5,
+  // Kill the additive corner glow (Layer 8) so the bottom-left stays as dark as
+  // the rest of the frame instead of lifting brighter.
+  lightGlow: 0,
 }
 
 // --- Typography ------------------------------------------------------------
