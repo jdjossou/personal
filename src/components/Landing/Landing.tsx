@@ -6,18 +6,18 @@
 // left-aligned PRESS ANY KEY centerpiece, and corner furniture (external links)
 // where the ATLUS logo sits in the reference.
 //
-// Task 01 is the STATIC layout foundation only — no scan-line animation
-// (Task 03), no shard background (Task 02), no responsive copy switch
-// (Task 04). The deep-navy layer below is a placeholder that Task 02 replaces
-// with the shard artwork; it sits over the global P3R water background for now.
-// The existing onStart wiring (click / Enter) is preserved so the app keeps
-// working end-to-end. All tunables live in constants.ts.
+// The shard background (Task 02) is mounted below as <ShardBackground />; the
+// scan-line text animation (Task 03) and responsive copy switch (Task 04) are
+// still to come. The shard canvas sits over the global P3R water background and
+// behind the title text. The existing onStart wiring (click / Enter) is
+// preserved so the app keeps working end-to-end. All tunables live in
+// constants.ts.
 
 import { useEffect } from 'react'
 import { centerOrigin, originFromEvent, type Origin } from '@/components/Transitions/handoff'
 import { LinkIcon } from './icons'
+import { ShardBackground } from './ShardBackground'
 import {
-  BG_COLOR,
   BLOCK_LEFT_VW,
   LABEL_FONT,
   LINKS,
@@ -60,9 +60,10 @@ export function Landing({ onStart }: LandingProps) {
       onClick={(e) => onStart(originFromEvent(e))}
       className="fixed inset-0 z-0 cursor-pointer overflow-hidden select-none"
     >
-      {/* Placeholder dark background. Task 02 swaps this single layer for the
-          shard artwork — keep it isolated so that insertion stays trivial. */}
-      <div className="absolute inset-0 -z-10" style={{ backgroundColor: BG_COLOR }} aria-hidden />
+      {/* Task 02 — geometric shard artwork, the landing screen's own backdrop
+          (distinct from the shared P3R water background). Self-contained canvas
+          layer sitting behind the title text. */}
+      <ShardBackground />
 
       {/* Single vertically-centred text block: identity cluster + giant prompt
           live in ONE flow column so the name truly sits "over" the prompt — when

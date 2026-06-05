@@ -15,10 +15,64 @@ export const PORTFOLIO_TAG = '// portfolio'
 // concern (swap PROMPT_WORDS behind a touch check).
 export const PROMPT_WORDS = ['PRESS', 'ANY', 'BUTTON'] as const
 
-// --- Background (placeholder) ----------------------------------------------
-// Flat deep-navy stand-in so the screen reads dark and never light. Task 02
-// swaps this single layer for the shard artwork — keep it isolated.
-export const BG_COLOR = '#0a1428'
+// --- Background ------------------------------------------------------------
+// Base fill for the shard background (Task 02). The canvas paints a vertical
+// gradient: a deep navy at the top (BG_COLOR) → darker navy (BG_COLOR_MID) →
+// near-black at the bottom (BG_COLOR_BOTTOM). Kept dark and moody. The hue still
+// leans into the menu's blue water family (its cyan-blue #00B7EA tint, brightest
+// at the top) so entering the menu reads as the same blue world with the lights
+// coming up rather than a hard colour cut — but the values stay low so the screen
+// reads dark / high-contrast, never light. No actual water is used here; the
+// landing keeps its own self-contained shard backdrop (per the doc).
+export const BG_COLOR = '#0a1830' // deep navy top, faint blue lean
+export const BG_COLOR_MID = '#06101f' // darker navy
+export const BG_COLOR_BOTTOM = '#03060d' // near-black
+
+// --- Shard background (Task 02) --------------------------------------------
+// Geometric shard artwork: angular polygon fragments layered at different
+// depths/opacities behind the title text. Plain values only (no React/DOM) so
+// tuning the look never touches ShardBackground.tsx — same split as
+// MainMenu/constants.ts. Drawn on a canvas mirroring ParticleField's lifecycle.
+
+// Near-monochrome palette — a tight set of cool blues only a few steps off the
+// dark base, so shards read as faint particles of light catching the navy rather
+// than coloured stained glass. No red, no bright fills, no outlines: shards are
+// soft filled fragments only, so nothing draws a sharp coloured edge.
+export const SHARD_COLORS = [
+  '#0e1d39', // base navy, barely above background
+  '#14294b', // navy
+  '#1b3258', // muted blue
+] as const
+
+// Far fewer fragments — a sparse, particle-like scatter, not a full mosaic.
+export const SHARD_COUNT = 26
+
+// Per-shard randomized ranges. Depth drives parallax strength, scale, and
+// opacity (far = small/dim, near = larger/slightly bolder). Size is the polygon
+// radius in px before the depth scale. Sides keeps shards angular.
+export const SHARD_DEPTH_RANGE = [0.15, 1.0] as const
+export const SHARD_SIZE_RANGE = [24, 150] as const
+export const SHARD_SIDES_RANGE = [3, 5] as const
+// Low opacities so the dark background stays dominant and the field reads subtle.
+export const SHARD_OPACITY_RANGE = [0.08, 0.28] as const
+// Very slow autonomous drift (px/sec) so the field feels alive but calm.
+export const SHARD_DRIFT_RANGE = [1.5, 6] as const
+
+// Shimmer / light pass: a soft band of brightness sweeping left → right across
+// the screen. SPEED is fractions-of-width per second; WIDTH is the gaussian
+// falloff (fraction of screen width); AMP is the peak added lightness alpha.
+export const SHARD_SHIMMER_SPEED = 0.1
+export const SHARD_SHIMMER_WIDTH = 0.16
+export const SHARD_SHIMMER_AMP = 0.3
+
+// Center clearance: shards whose centre falls inside this rectangle (fractions
+// of the viewport) are thinned out and dimmed so the name + PRESS ANY KEY block
+// stays legible. The block sits left-aligned around mid-height (see Landing.tsx).
+export const SHARD_CLEAR_RECT = { x0: 0.02, y0: 0.22, x1: 0.62, y1: 0.82 } as const
+// Probability a shard generated inside the clear rect is discarded outright, and
+// the opacity multiplier applied to those that survive there.
+export const SHARD_CLEAR_DISCARD = 0.78
+export const SHARD_CLEAR_DIM = 0.4
 
 // --- Typography ------------------------------------------------------------
 // PRESS ANY KEY is by far the largest element; clamp keeps it dominant yet
