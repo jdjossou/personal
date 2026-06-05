@@ -30,7 +30,7 @@ Model every field the reference quest log and `goal.md` call for. Suggested
 shape (tune names as needed, but keep it flat and obvious to edit):
 
 ```ts
-export type ProjectStatus = 'SHIPPED' | 'IN_PROGRESS' | 'ARCHIVED'
+export type ProjectStatus = 'SHIPPED' | 'IN_PROGRESS'
 
 export type ProjectLink = {
   label: string          // "GitHub", "Demo", "Devpost", "Writeup"…
