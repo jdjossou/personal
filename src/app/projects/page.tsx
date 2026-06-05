@@ -1,7 +1,7 @@
-import { SectionPlaceholder } from '@/components/SectionPlaceholder/SectionPlaceholder'
+import { QuestList } from '@/components/Projects/QuestList'
 
-// Placeholder so the menu's PROJECTS route resolves end-to-end (Task 06).
-// Real section content is later work.
+// Projects "Quest Screen" (Task 02): the numbered mission list rendered over the
+// shared P3R water background. Data comes from Projects/constants.ts.
 export default function ProjectsPage() {
-  return <SectionPlaceholder title="Projects" />
+  return <QuestList />
 }

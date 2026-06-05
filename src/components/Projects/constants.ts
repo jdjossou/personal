@@ -98,3 +98,39 @@ export const formatDateRange = (start: string, end?: string): string =>
 // an unknown slug so callers can fall back to the plain list.
 export const getProjectBySlug = (slug: string): Project | undefined =>
   PROJECTS.find((project) => project.slug === slug)
+
+// --- Quest-list presentation (Task 02) -------------------------------------
+// Tunable look of the mission list. Kept here (React/DOM-free values) so the
+// row/list components stay logic-free, same split as MainMenu/constants.ts.
+
+// Static section chrome, repurposed from P3R's Quest screen: the QUEST header →
+// PROJECTS title, the "Sort by No." affordance, and the bottom "which one?" hint.
+export const SECTION_TITLE = 'PROJECTS'
+export const SORT_HINT = 'Sort by No.'
+export const VIEW_HINT = 'Which project do you want to view?'
+
+// Per-status badge copy. The data enum stays IN_PROGRESS/DONE; these are only
+// the display labels (DONE reads "DONE", echoing the reference's chip).
+export const STATUS_LABEL: Record<ProjectStatus, string> = {
+  IN_PROGRESS: 'IN PROGRESS',
+  DONE: 'DONE',
+}
+
+// Per-status accent colour. IN PROGRESS → the site's cold P3R blue (echoes the
+// reference's blue InProgress chip); DONE → a confident green. Tune freely.
+export const STATUS_COLOR: Record<ProjectStatus, string> = {
+  IN_PROGRESS: '#5EA8E0',
+  DONE: '#3FB96B',
+}
+
+// Sharp parallelogram cut for the badge fill — angular Persona chip, never a
+// soft pill (mirrors MainMenu's INDEX_PANEL_CLIP). x y per corner in a 0–100% box.
+export const BADGE_CLIP = 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)'
+
+// Cap how many tags render inline in a row before the rest collapse to a "+N"
+// counter, so a tag-heavy project never blows out the column.
+export const MAX_ROW_TAGS = 4
+
+// Zero-padded quest number derived from array order: 0 → '/01', 9 → '/10'.
+export const formatIndex = (i: number): string =>
+  `/${String(i + 1).padStart(2, '0')}`
