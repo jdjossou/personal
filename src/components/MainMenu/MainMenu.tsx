@@ -15,6 +15,12 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
+import {
+  armTransition,
+  centerOrigin,
+  originFromEvent,
+  type Origin,
+} from '@/components/Transitions/handoff'
 import { InfoBlock } from './InfoBlock'
 import { LeftPanel } from './LeftPanel'
 import { Selector } from './Selector'
@@ -50,7 +56,8 @@ import {
 
 type MainMenuProps = {
   // Called on Escape (or a touch back gesture) — returns to the landing screen.
-  onBack: () => void
+  // Receives the origin point the back transition's mask should grow from.
+  onBack: (origin: Origin) => void
 }
 
 // Stable no-op subscriber for useSyncExternalStore: the pointer type is read
@@ -113,11 +120,12 @@ export function MainMenu({ onBack }: MainMenuProps) {
     onBackRef.current = onBack
   }, [onBack])
 
-  // Open a section: confirm sound (Task 09) and exit transition (Task 08) hook
-  // in here later; for now navigate straight to the section's route.
-  function openSection(index: number) {
-    // TODO Task 09: play confirm sound.
-    // TODO Task 08: run the exit transition, then navigate.
+  // Open a section: arm the wavy-blot reveal (Task 08) that the section will play
+  // on mount, then navigate. `origin` is the click point (or screen centre for
+  // keyboard) so the blot spreads from where the visitor acted.
+  function openSection(index: number, origin: Origin) {
+    // TODO Task 09: play confirm sound (fire as the blot begins expanding).
+    armTransition({ effect: 'wavyBlot', origin, target: 'section' })
     router.push(MENU_ROUTES[index])
   }
 
@@ -142,11 +150,11 @@ export function MainMenu({ onBack }: MainMenuProps) {
           break
         case 'Enter':
           e.preventDefault()
-          openSection(selectedRef.current)
+          openSection(selectedRef.current, centerOrigin())
           break
         case 'Escape':
           e.preventDefault()
-          onBackRef.current()
+          onBackRef.current(centerOrigin())
           break
       }
     }
@@ -208,7 +216,7 @@ export function MainMenu({ onBack }: MainMenuProps) {
                 data-menu-item={item}
                 data-selected={isSelected}
                 onMouseEnter={() => setSelectedIndex(i)}
-                onClick={() => openSection(i)}
+                onClick={(e) => openSection(i, originFromEvent(e))}
                 className={`cursor-pointer font-display leading-none tracking-wide uppercase ${
                   isSelected ? 'relative' : ''
                 }`}
