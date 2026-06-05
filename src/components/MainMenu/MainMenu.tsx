@@ -23,7 +23,10 @@ import {
 } from '@/components/Transitions/handoff'
 import { InfoBlock } from './InfoBlock'
 import { LeftPanel } from './LeftPanel'
+import { ParticleField } from './ParticleField'
 import { Selector } from './Selector'
+import { SoundToggle } from './SoundToggle'
+import { initAudioOnGesture, playSound } from './audio'
 import {
   ITEM_STYLES,
   ITEM_TRANSITION_MS,
@@ -124,7 +127,7 @@ export function MainMenu({ onBack }: MainMenuProps) {
   // on mount, then navigate. `origin` is the click point (or screen centre for
   // keyboard) so the blot spreads from where the visitor acted.
   function openSection(index: number, origin: Origin) {
-    // TODO Task 09: play confirm sound (fire as the blot begins expanding).
+    playSound('confirm') // fires as the blot begins expanding (Task 09)
     armTransition({ effect: 'wavyBlot', origin, target: 'section' })
     router.push(MENU_ROUTES[index])
   }
@@ -132,6 +135,15 @@ export function MainMenu({ onBack }: MainMenuProps) {
   // Focus the menu on open so keystrokes are captured immediately (Task 06).
   useEffect(() => {
     rootRef.current?.focus()
+  }, [])
+
+  // Sound (Task 09): bind the first-gesture audio-context init, then play the
+  // soft "open" whoosh once as the menu summons in. The Landing start click (or
+  // the section back action) already provided the gesture, so the context is
+  // allowed to resume here. Fires once on mount only.
+  useEffect(() => {
+    initAudioOnGesture()
+    playSound('open')
   }, [])
 
   // Global keyboard navigation (Task 06). Attached to window so it works
@@ -142,10 +154,12 @@ export function MainMenu({ onBack }: MainMenuProps) {
       switch (e.key) {
         case 'ArrowUp':
           e.preventDefault()
+          playSound('move') // selection always changes (wraps)
           setSelectedIndex((i) => (i - 1 + len) % len)
           break
         case 'ArrowDown':
           e.preventDefault()
+          playSound('move')
           setSelectedIndex((i) => (i + 1) % len)
           break
         case 'Enter':
@@ -154,6 +168,7 @@ export function MainMenu({ onBack }: MainMenuProps) {
           break
         case 'Escape':
           e.preventDefault()
+          playSound('cancel')
           onBackRef.current(centerOrigin())
           break
       }
@@ -169,6 +184,11 @@ export function MainMenu({ onBack }: MainMenuProps) {
       tabIndex={-1}
       className="fixed inset-0 z-0 overflow-hidden bg-transparent outline-none select-none"
     >
+      {/* Decorative confetti particles (Task 09) — first child so it paints
+          behind the white LeftPanel (z-0) but above the global water canvas
+          (z:-1 in layout.tsx): water → particles → left panel → text → selector. */}
+      <ParticleField />
+
       {/* Left visual — the flat white region with its organic, flowing water edge
           (z-0, in front of the z:-1 water canvas, behind the z-10 menu text),
           taking the role P3R gives its character art, plus the giant black
@@ -215,7 +235,12 @@ export function MainMenu({ onBack }: MainMenuProps) {
                 key={item}
                 data-menu-item={item}
                 data-selected={isSelected}
-                onMouseEnter={() => setSelectedIndex(i)}
+                onMouseEnter={() => {
+                  // Blip only on a real change — never re-fire on the
+                  // already-selected item (Task 09).
+                  if (i !== selectedRef.current) playSound('move')
+                  setSelectedIndex(i)
+                }}
                 onClick={(e) => openSection(i, originFromEvent(e))}
                 className={`cursor-pointer font-display leading-none tracking-wide uppercase ${
                   isSelected ? 'relative' : ''
@@ -290,6 +315,10 @@ export function MainMenu({ onBack }: MainMenuProps) {
           })}
         </ul>
       </nav>
+
+      {/* Sound toggle (Task 09) — lower-left speaker on/off, mutes all UI sounds
+          and persists the choice to localStorage. */}
+      <SoundToggle />
 
       {/* Zone C — bottom bar: the selected-section info block with the nav
           prompts stacked beneath it (lower-right), driven by `selectedIndex`. */}

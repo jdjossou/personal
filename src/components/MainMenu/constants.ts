@@ -210,3 +210,32 @@ export const PANELS_ENTER_OFFSET_PX = 10
 // Clears the one-time "opening" flag (only used to gate the selector spawn
 // delay) once every entrance above has comfortably finished.
 export const SEQUENCE_TOTAL_MS = 1100
+
+// --- Decorative particles (Task 09) ----------------------------------------
+// A sparse field of small polygonal confetti drifting above the water but
+// behind the white left panel. Purely atmospheric — kept sparse so it never
+// reads as noise. Drawn on a canvas with additive ('screen') blending so the
+// shapes glow rather than paint over the scene. Ranges below are [min, max]
+// and each particle picks a random value within them once on init.
+export const PARTICLE_COUNT = 22 // 15–30 keeps it sparse
+export const PARTICLE_COLORS = ['#3A9FE8', '#7ECDF5', '#FFFFFF'] as const
+// Red is rare (the menu's accent rule) — drawn with this probability instead.
+export const PARTICLE_RED = '#E83838'
+export const PARTICLE_RED_CHANCE = 0.08
+// Polygon radius in px (4–12px across ≈ 2–6px radius), drift speed in px/s,
+// rotation in rad/s, and resting opacity. Sides per polygon: 3–6.
+export const PARTICLE_SIZE_RANGE = [2, 6] as const
+export const PARTICLE_SPEED_RANGE = [10, 30] as const // px/s, magnitude
+export const PARTICLE_SPIN_RANGE = [0.2, 1.0] as const // rad/s, signed at init
+export const PARTICLE_OPACITY_RANGE = [0.3, 0.7] as const
+export const PARTICLE_SIDES_RANGE = [3, 6] as const
+// Subtle opacity flicker: a slow sine added to the resting opacity.
+export const PARTICLE_FLICKER_AMP = 0.15
+export const PARTICLE_FLICKER_SPEED_RANGE = [0.4, 1.2] as const // rad/s
+
+// --- Sound (Task 09) -------------------------------------------------------
+// All UI sounds are synthesized with the Web Audio API (no audio files). The
+// master gain is low so they stay quiet by default. Mute state persists in
+// localStorage under this key; default is unmuted (sounds on).
+export const SOUND_MASTER_GAIN = 0.15
+export const SOUND_MUTE_STORAGE_KEY = 'p3r:soundMuted'

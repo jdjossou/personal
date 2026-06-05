@@ -17,17 +17,17 @@ import {
 } from './constants'
 
 export function InfoBlock({ selectedIndex }: { selectedIndex: number }) {
-  // `shown` lags `selectedIndex`: we fade out, then adopt the new index.
+  // `shown` lags `selectedIndex`: visibility is derived from whether it has
+  // caught up (mismatch = mid-fade-out), so the effect only schedules the swap
+  // — no synchronous setState in the effect body.
   const [shown, setShown] = useState(selectedIndex)
-  const [visible, setVisible] = useState(true)
+  const visible = shown === selectedIndex
 
   useEffect(() => {
     if (selectedIndex === shown) return
-    setVisible(false)
-    const id = window.setTimeout(() => {
-      setShown(selectedIndex)
-      setVisible(true)
-    }, INFO_FADE_OUT_MS)
+    // Fade out (driven by the derived `visible`), then adopt the new index,
+    // which flips `visible` back true and fades the new content in.
+    const id = window.setTimeout(() => setShown(selectedIndex), INFO_FADE_OUT_MS)
     return () => window.clearTimeout(id)
   }, [selectedIndex, shown])
 
