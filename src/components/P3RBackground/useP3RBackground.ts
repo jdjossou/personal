@@ -3,15 +3,10 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import {
-  BASE_GRADIENT,
-  BLUR,
-  CAUSTIC1,
-  CAUSTIC2,
   CAUSTIC2_PANEL,
-  DISTORTION,
+  DEFAULT_P3R_CONFIG,
   DPR_CAP,
-  STEPPED_FPS,
-  TINT,
+  type P3RConfig,
 } from './constants'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
 import { bakeBubblesTexture, bakeCaustic2PatternTexture, bakePatternTexture } from './noise'
@@ -33,13 +28,27 @@ const v4 = (t: readonly [number, number, number, number]) =>
   new THREE.Vector4(t[0], t[1], t[2], t[3])
 
 export function useP3RBackground(
-  canvasRef: React.RefObject<HTMLCanvasElement | null>
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  config: P3RConfig = DEFAULT_P3R_CONFIG
 ) {
   const frameIdRef = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+
+    // Pull the per-instance tunables out under the original constant names so the
+    // pass setup below reads unchanged. The default config IS the site-wide look;
+    // the landing passes a darker, calmer variant (see Landing/constants.ts).
+    const {
+      baseGradient: BASE_GRADIENT,
+      tint: TINT,
+      distortion: DISTORTION,
+      caustic1: CAUSTIC1,
+      caustic2: CAUSTIC2,
+      blur: BLUR,
+      steppedFps: STEPPED_FPS,
+    } = config
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false })
     renderer.setSize(window.innerWidth, window.innerHeight)
@@ -371,5 +380,5 @@ export function useP3RBackground(
       caustic2Mask.dispose()
       renderer.dispose()
     }
-  }, [canvasRef])
+  }, [canvasRef, config])
 }

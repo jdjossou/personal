@@ -79,3 +79,54 @@ export const CAUSTIC2_PANEL = {
 export const BLUR = {
   sigma: 1.4, // 7×7 kernel, light softening
 } as const
+
+// --- Tunable config bundle --------------------------------------------------
+// The subset of the above that maps to live shader UNIFORMS (no texture re-bake
+// needed) is bundled here so callers can render a differently-tuned instance of
+// the same water — e.g. the landing screen mounts a darker, calmer variant while
+// the rest of the site uses DEFAULT_P3R_CONFIG. Geometry-baked values (DPR_CAP,
+// CAUSTIC2_PANEL) and the colour LUT itself are NOT overridable; a darker scheme
+// is achieved by lowering the gradient lumas (sampling the dark end of the LUT)
+// and the tint, not by re-baking.
+type V2 = readonly [number, number]
+export type P3RConfig = {
+  baseGradient: {
+    topLuma: number
+    midLuma: number
+    bottomLuma: number
+    midPoint: number
+    noiseAmp: number
+  }
+  tint: { color: readonly [number, number, number]; alphaTop: number; alphaBottom: number }
+  distortion: { amplitude: number; speed: number; waveLength: number }
+  caustic1: {
+    color: readonly [number, number, number, number]
+    velocityMain: V2
+    velocitySecond: V2
+    velocityBubbles: V2
+    scaleMain: V2
+    scaleSecond: V2
+    scaleBubbles: V2
+    cut: number
+  }
+  caustic2: {
+    color: readonly [number, number, number, number]
+    velocityMain: V2
+    velocitySecond: V2
+    scaleMain: V2
+    scaleSecond: V2
+    cut: number
+  }
+  blur: { sigma: number }
+  steppedFps: number
+}
+
+export const DEFAULT_P3R_CONFIG: P3RConfig = {
+  baseGradient: BASE_GRADIENT,
+  tint: TINT,
+  distortion: DISTORTION,
+  caustic1: CAUSTIC1,
+  caustic2: CAUSTIC2,
+  blur: BLUR,
+  steppedFps: STEPPED_FPS,
+}

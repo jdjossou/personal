@@ -3,6 +3,8 @@
 // look never touches component logic (same split as MainMenu/constants.ts and
 // P3RBackground/constants.ts).
 
+import { DEFAULT_P3R_CONFIG, type P3RConfig } from '@/components/P3RBackground/constants'
+
 // --- Copy ------------------------------------------------------------------
 export const NAME = 'Juniel Djossou'
 export const ROLE_LABEL = '// Software Engineer · CS Student'
@@ -15,64 +17,53 @@ export const PORTFOLIO_TAG = '// portfolio'
 // concern (swap PROMPT_WORDS behind a touch check).
 export const PROMPT_WORDS = ['PRESS', 'ANY', 'BUTTON'] as const
 
-// --- Background ------------------------------------------------------------
-// Base fill for the shard background (Task 02). The canvas paints a vertical
-// gradient: a deep navy at the top (BG_COLOR) → darker navy (BG_COLOR_MID) →
-// near-black at the bottom (BG_COLOR_BOTTOM). Kept dark and moody. The hue still
-// leans into the menu's blue water family (its cyan-blue #00B7EA tint, brightest
-// at the top) so entering the menu reads as the same blue world with the lights
-// coming up rather than a hard colour cut — but the values stay low so the screen
-// reads dark / high-contrast, never light. No actual water is used here; the
-// landing keeps its own self-contained shard backdrop (per the doc).
-export const BG_COLOR = '#0a1830' // deep navy top, faint blue lean
-export const BG_COLOR_MID = '#06101f' // darker navy
-export const BG_COLOR_BOTTOM = '#03060d' // near-black
-
-// --- Shard background (Task 02) --------------------------------------------
-// Geometric shard artwork: angular polygon fragments layered at different
-// depths/opacities behind the title text. Plain values only (no React/DOM) so
-// tuning the look never touches ShardBackground.tsx — same split as
-// MainMenu/constants.ts. Drawn on a canvas mirroring ParticleField's lifecycle.
-
-// Near-monochrome palette — a tight set of cool blues only a few steps off the
-// dark base, so shards read as faint particles of light catching the navy rather
-// than coloured stained glass. No red, no bright fills, no outlines: shards are
-// soft filled fragments only, so nothing draws a sharp coloured edge.
-export const SHARD_COLORS = [
-  '#0e1d39', // base navy, barely above background
-  '#14294b', // navy
-  '#1b3258', // muted blue
-] as const
-
-// Far fewer fragments — a sparse, particle-like scatter, not a full mosaic.
-export const SHARD_COUNT = 26
-
-// Per-shard randomized ranges. Depth drives parallax strength, scale, and
-// opacity (far = small/dim, near = larger/slightly bolder). Size is the polygon
-// radius in px before the depth scale. Sides keeps shards angular.
-export const SHARD_DEPTH_RANGE = [0.15, 1.0] as const
-export const SHARD_SIZE_RANGE = [24, 150] as const
-export const SHARD_SIDES_RANGE = [3, 5] as const
-// Low opacities so the dark background stays dominant and the field reads subtle.
-export const SHARD_OPACITY_RANGE = [0.08, 0.28] as const
-// Very slow autonomous drift (px/sec) so the field feels alive but calm.
-export const SHARD_DRIFT_RANGE = [1.5, 6] as const
-
-// Shimmer / light pass: a soft band of brightness sweeping left → right across
-// the screen. SPEED is fractions-of-width per second; WIDTH is the gaussian
-// falloff (fraction of screen width); AMP is the peak added lightness alpha.
-export const SHARD_SHIMMER_SPEED = 0.1
-export const SHARD_SHIMMER_WIDTH = 0.16
-export const SHARD_SHIMMER_AMP = 0.3
-
-// Center clearance: shards whose centre falls inside this rectangle (fractions
-// of the viewport) are thinned out and dimmed so the name + PRESS ANY KEY block
-// stays legible. The block sits left-aligned around mid-height (see Landing.tsx).
-export const SHARD_CLEAR_RECT = { x0: 0.02, y0: 0.22, x1: 0.62, y1: 0.82 } as const
-// Probability a shard generated inside the clear rect is discarded outright, and
-// the opacity multiplier applied to those that survive there.
-export const SHARD_CLEAR_DISCARD = 0.78
-export const SHARD_CLEAR_DIM = 0.4
+// --- Background (Task 02) — landing water variant --------------------------
+// The landing reuses the site's animated P3R water (P3RBackground) instead of a
+// separate artwork, but mounts its OWN instance with a darker, calmer config so
+// it feels distinct from the main menu while clearly belonging to the same blue
+// world. Entering the menu then reads as the same water with the lights coming
+// up. Only shader-uniform values are overridden here (no texture re-bake): the
+// gradient lumas + tint are pulled down to sample the dark end of the shared blue
+// LUT, and the animation is slowed and quietened. Everything not listed inherits
+// the site default (DEFAULT_P3R_CONFIG).
+export const LANDING_WATER: P3RConfig = {
+  ...DEFAULT_P3R_CONFIG,
+  // Darker base: pull the whole vertical luma ramp down so it sits in the deep
+  // navy / dark-blue region of the LUT and never reaches the bright cyan/white top.
+  baseGradient: {
+    topLuma: 0.28, // was 0.78 — dark blue surface, well below the bright cyan band
+    midLuma: 0.14, // was 0.56
+    bottomLuma: 0.04, // was 0.10 — near-black depths
+    midPoint: 0.6,
+    noiseAmp: 0.05,
+  },
+  // Faint, deep-toned teal wash so the tint adds mood without brightening.
+  tint: {
+    color: [0.0, 0.38, 0.55], // deeper teal than the default cyan
+    alphaTop: 0.22, // was 0.5
+    alphaBottom: 0.08, // was 0.2
+  },
+  // Calmer warp — gentler, slower swell than the menu's.
+  distortion: { amplitude: 0.024, speed: 0.32, waveLength: 0.1 },
+  // Dimmer, sparser caustics drifting more slowly (subdued vs the menu).
+  caustic1: {
+    ...DEFAULT_P3R_CONFIG.caustic1,
+    color: [0.331, 0.929, 0.919, 0.11], // was alpha 0.255 — dim streaks
+    velocityMain: [0.0, -0.045],
+    velocitySecond: [0.0, 0.06],
+    velocityBubbles: [0.0, 0.08],
+    cut: 0.83, // was 0.79 — sparser streaks
+  },
+  caustic2: {
+    ...DEFAULT_P3R_CONFIG.caustic2,
+    color: [0.587, 0.888, 0.939, 0.2], // was alpha 0.471
+    velocityMain: [0.0, -0.06],
+    velocitySecond: [0.0, 0.16],
+  },
+  // Softer focus + a slightly slower shimmer cadence so it reads distinct.
+  blur: { sigma: 1.7 },
+  steppedFps: 5,
+}
 
 // --- Typography ------------------------------------------------------------
 // PRESS ANY KEY is by far the largest element; clamp keeps it dominant yet

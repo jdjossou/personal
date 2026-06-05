@@ -6,20 +6,22 @@
 // left-aligned PRESS ANY KEY centerpiece, and corner furniture (external links)
 // where the ATLUS logo sits in the reference.
 //
-// The shard background (Task 02) is mounted below as <ShardBackground />; the
-// scan-line text animation (Task 03) and responsive copy switch (Task 04) are
-// still to come. The shard canvas sits over the global P3R water background and
-// behind the title text. The existing onStart wiring (click / Enter) is
-// preserved so the app keeps working end-to-end. All tunables live in
+// The background (Task 02) is its own darker, calmer instance of the site's P3R
+// water (mounted below with the LANDING_WATER config) — distinct from the main
+// menu's brighter water yet clearly the same world, so entering the menu reads as
+// the lights coming up. The scan-line text animation (Task 03) and responsive
+// copy switch (Task 04) are still to come. The existing onStart wiring (click /
+// Enter) is preserved so the app keeps working end-to-end. All tunables live in
 // constants.ts.
 
 import { useEffect } from 'react'
 import { centerOrigin, originFromEvent, type Origin } from '@/components/Transitions/handoff'
+import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
 import { LinkIcon } from './icons'
-import { ShardBackground } from './ShardBackground'
 import {
   BLOCK_LEFT_VW,
   LABEL_FONT,
+  LANDING_WATER,
   LINKS,
   LINK_BG_COLOR,
   LINK_BORDER_COLOR,
@@ -60,10 +62,11 @@ export function Landing({ onStart }: LandingProps) {
       onClick={(e) => onStart(originFromEvent(e))}
       className="fixed inset-0 z-0 cursor-pointer overflow-hidden select-none"
     >
-      {/* Task 02 — geometric shard artwork, the landing screen's own backdrop
-          (distinct from the shared P3R water background). Self-contained canvas
-          layer sitting behind the title text. */}
-      <ShardBackground />
+      {/* Task 02 — the landing's own darker/calmer instance of the P3R water,
+          rendered behind the title text. This sits inside <main> (its own
+          stacking context) so it covers the brighter global water for the landing
+          only; the menu and other pages keep the default look. */}
+      <P3RBackground config={LANDING_WATER} />
 
       {/* Single vertically-centred text block: identity cluster + giant prompt
           live in ONE flow column so the name truly sits "over" the prompt — when
