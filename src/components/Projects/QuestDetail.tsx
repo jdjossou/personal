@@ -16,12 +16,9 @@
 
 import Image from 'next/image'
 import { StatusBadge } from './StatusBadge'
-import {
-  LINKS_LABEL,
-  VIEW_HINT,
-  formatDateRange,
-  type Project,
-} from './constants'
+import { LINKS_LABEL, VIEW_HINT } from './constants'
+import { formatDateRange } from './helpers'
+import type { Project } from './projects'
 
 export function QuestDetail({ project }: { project: Project | undefined }) {
   // Neutral fallback — only reached if an unknown slug is active (Task 04 could

@@ -5,7 +5,8 @@
 // on selection and stays legible on the crimson selection chip (while still
 // reading DONE-green vs IN-PROGRESS-blue). Pure + presentational.
 
-import { STATUS_COLOR, STATUS_LABEL, type ProjectStatus } from './constants'
+import { STATUS_COLOR, STATUS_LABEL } from './constants'
+import type { ProjectStatus } from './projects'
 
 export function StatusBadge({
   status,

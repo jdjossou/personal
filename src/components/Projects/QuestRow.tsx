@@ -17,10 +17,9 @@ import {
   SELECT_BAND_FILL,
   SELECT_MARKER_WHITE,
   STATUS_LABEL,
-  formatDateRange,
-  formatIndex,
-  type Project,
 } from './constants'
+import { formatDateRange, formatIndex } from './helpers'
+import type { Project } from './projects'
 
 // One grid template shared by every row AND the QuestList header so the columns
 // line up down the whole list. Mobile keeps only index · name · status (3

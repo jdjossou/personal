@@ -28,7 +28,7 @@ Persona UI rather than a standalone page.
 The reference shows a `Sort by No.` control. If included, keep it lightweight:
 
 - Sort modes such as **No. (default order)**, **Date**, or **Status**.
-- Optionally filter by status (`SHIPPED` / `IN PROGRESS`) or by tag.
+- Optionally filter by status (`DONE` / `IN PROGRESS`) or by tag.
 - Sorting must not break the deep-link `slug` contract — the displayed `/01 /02`
   index may re-order, but a project's `slug` and its shareable URL stay fixed.
 - Treat this as optional polish; it must not block core navigation.
