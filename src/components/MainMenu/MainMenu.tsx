@@ -25,7 +25,6 @@ import { InfoBlock } from './InfoBlock'
 import { LeftPanel } from './LeftPanel'
 import { ParticleField } from './ParticleField'
 import { Selector } from './Selector'
-import { SoundToggle } from './SoundToggle'
 import { initAudioOnGesture, playSound } from './audio'
 import {
   ITEM_STYLES,
@@ -315,10 +314,6 @@ export function MainMenu({ onBack }: MainMenuProps) {
           })}
         </ul>
       </nav>
-
-      {/* Sound toggle (Task 09) — lower-left speaker on/off, mutes all UI sounds
-          and persists the choice to localStorage. */}
-      <SoundToggle />
 
       {/* Zone C — bottom bar: the selected-section info block with the nav
           prompts stacked beneath it (lower-right), driven by `selectedIndex`. */}

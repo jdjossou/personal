@@ -96,6 +96,19 @@ body {
   }
 }
 
+/* Education "Academic Status" slash field (SlashField.tsx). A slow lateral
+   drift of the diagonal blue brush-slashes — the P3R "Check Status" shimmer. The
+   rotate is carried here too so it overrides the element's static (reduced-
+   motion) transform only while running; the keyframe just nudges translateX. */
+@keyframes edu-slash-drift {
+  from {
+    transform: translateX(-52%) rotate(-22deg);
+  }
+  to {
+    transform: translateX(-48%) rotate(-22deg);
+  }
+}
+
 /* Honour reduced-motion: drop the twitch/idle wobble and let the selector snap
    into place instantly, matching how the P3R background freezes its animation.
    (The left panel's flowing edge handles reduced-motion in JS — it simply never
@@ -105,6 +118,11 @@ body {
     transition: none !important;
   }
   [data-menu-selector] * {
+    animation: none !important;
+  }
+  /* Freeze the slash-field drift — the slashes stay put (their static transform
+     keeps them centred + on the diagonal), mirroring the frozen background. */
+  [data-edu-slashes] > * {
     animation: none !important;
   }
   /* Static fallback for the title sweep: freeze the animation, drop the diagonal

@@ -13,7 +13,7 @@
 export type EducationProfile = {
   university: string // "University of Waterloo"
   degree: string // "BCS, Computer Science" (degree / program)
-  expectedGraduation: string // ISO 'YYYY-MM' — formatted for display by formatGraduation()
+  expectedGraduation: string // ISO 'YYYY-MM' — graduationYear() pulls the year for "Class of 20XX"
   location?: string // "Waterloo, ON" (optional)
   tagline?: string // short factual line, optional (e.g. specialization)
 }
@@ -36,15 +36,16 @@ export type CourseLink = {
 }
 
 export type Course = {
-  // `slug` is the contract with selection (getCourseBySlug in helpers.ts, Task
-  // 03) and the optional deep link (Task 04). It must be URL-safe, stable and
-  // unique — changing it breaks any shared link that opens this course directly.
+  // `slug` is the stable, unique id a term pins a course by (coursesForTerm in
+  // helpers.ts). Must be URL-safe and unique — changing it breaks any term's
+  // explicit `courseSlugs` reference.
   slug: string
   code: string // "CS246"
   name: string // "Object-Oriented Software Development"
   category: CourseCategory // → the LEADER/PARTY badge slot
-  // `term` is the ISO 'YYYY-MM' the course was taken — formatted by formatTerm().
-  // Optional: a course with no recorded term still renders cleanly.
+  // `term` is the ISO 'YYYY-MM' the course was taken — it files the course under
+  // the matching study Term (coursesForTerm). Optional: a term-less course (e.g.
+  // PD) is instead pinned via a Term's `courseSlugs`.
   term?: string
   units?: number // course weight/credits — factual figure; default 0.5 at Waterloo
   // `level` is an optional explicit override; otherwise it is derived from the
@@ -165,4 +166,54 @@ export const COURSES: readonly Course[] = [
     summary:
       'Co-op professional development on clear technical communication and reporting.',
   },
+] as const
+
+// --- Terms (Academic Status redesign) --------------------------------------
+// The study terms that make up the roster on the Education "Academic Status"
+// screen — P3R's "Check Status" party list, repurposed as the Waterloo study-
+// term sequence (1A → 4B). Each term groups the COURSES taken in it (matched by
+// `period`, plus any term-less courses pinned via `courseSlugs`). Selecting a
+// term reveals what it taught; the degree / university / graduation stay in the
+// always-on identity panel. Order is chronological = display order.
+//
+// ⚠️ SEED — VERIFY THIS. The labels, periods, co-op pattern, the pinned PD
+// course, and the statuses below are a best-effort reconstruction from the
+// course `term`s in COURSES. This is YOUR real academic record: fix the
+// sequence, add/remove terms, re-pin PD, and move the single `current` marker as
+// your program actually runs. The last study term should land just before
+// PROFILE.expectedGraduation ('2028-04'). Placing a course is still a one-line
+// edit in COURSES — its `term` is what files it under a term here.
+export type TermStatus = 'completed' | 'current' | 'upcoming'
+
+export type Term = {
+  // `slug` is the contract with selection + the deep link (`/education/<slug>`).
+  // URL-safe, stable, unique — changing it breaks any shared link to this term.
+  slug: string
+  label: string // Waterloo study-term label — '1A', '2B' …
+  year: number // 1..4 — the "level" figure shown on the row
+  // ISO 'YYYY-MM' of the term start (Winter → 01, Spring → 05, Fall → 09).
+  // Courses whose `term` equals this are listed under the term automatically.
+  period: string
+  status: TermStatus // drives the row accent + detail status tag
+  // Term-less courses (e.g. PD, taken on a work term) pinned here explicitly;
+  // period-matched courses are added automatically, so list only the extras.
+  courseSlugs?: readonly string[]
+}
+
+export const TERMS: readonly Term[] = [
+  {
+    slug: 'term-1a',
+    label: '1A',
+    year: 1,
+    period: '2024-01',
+    status: 'completed',
+    courseSlugs: ['pd-professional-development'],
+  },
+  { slug: 'term-1b', label: '1B', year: 1, period: '2024-09', status: 'completed' },
+  { slug: 'term-2a', label: '2A', year: 2, period: '2025-01', status: 'completed' },
+  { slug: 'term-2b', label: '2B', year: 2, period: '2025-09', status: 'completed' },
+  { slug: 'term-3a', label: '3A', year: 3, period: '2026-01', status: 'completed' },
+  { slug: 'term-3b', label: '3B', year: 3, period: '2026-09', status: 'current' },
+  { slug: 'term-4a', label: '4A', year: 4, period: '2027-09', status: 'upcoming' },
+  { slug: 'term-4b', label: '4B', year: 4, period: '2028-01', status: 'upcoming' },
 ] as const

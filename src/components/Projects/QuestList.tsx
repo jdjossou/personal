@@ -23,7 +23,7 @@
 //
 // Task 05 wires the page into the site's game feel: Escape returns to the main
 // menu (alongside the Back button), the menu's UI sounds fire on move/confirm/
-// cancel, a lower-left SoundToggle mutes them all, and the "Sort by No." label
+// cancel, and the "Sort by No." label
 // becomes a real control cycling No. → Date → Status. Sorting only re-orders the
 // displayed rows + their /01 /02 numbers — every project keeps its slug, so the
 // deep-link contract is untouched (refs are slug-keyed, not index-keyed).
@@ -37,7 +37,6 @@ import {
   centerOrigin,
   type Origin,
 } from '@/components/Transitions/handoff'
-import { SoundToggle } from '@/components/MainMenu/SoundToggle'
 import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
 import { QuestRow, ROW_GRID } from './QuestRow'
 import { QuestDetail } from './QuestDetail'
@@ -130,7 +129,7 @@ export function QuestList() {
   // it (a11y: keyboard/SR users land on the project, not the top of the list), and
   // normalize a removed/unknown slug back to the bare base. `nearest` is a no-op
   // when the row is already visible. Also arms the audio context for the
-  // SoundToggle + key/pointer SFX (matches MainMenu's first-gesture init).
+  // the key/pointer SFX (matches MainMenu's first-gesture init).
   useEffect(() => {
     initAudioOnGesture()
     const { slug, explicit, unknown } = resolveActive(window.location.pathname)
@@ -249,8 +248,7 @@ export function QuestList() {
 
   return (
     <ScreenReveal reveals="section">
-      <>
-        <main className="fixed inset-0 z-0 overflow-y-auto bg-transparent select-none">
+      <main className="fixed inset-0 z-0 overflow-y-auto bg-transparent select-none">
           {/* Legibility scrim — a left-anchored dark gradient over the water so the
               list text stays readable where the water runs bright (atmospheric,
               full-bleed, NOT a card). Sits above the global water, below content. */}
@@ -327,13 +325,7 @@ export function QuestList() {
               </button>
             </div>
           </div>
-        </main>
-
-        {/* Sound toggle (Task 05) — reused from the menu, pinned to the viewport
-            lower-left. Rendered OUTSIDE the scrolling <main> so it stays put while
-            the quest list scrolls. */}
-        <SoundToggle />
-      </>
+      </main>
     </ScreenReveal>
   )
 }
