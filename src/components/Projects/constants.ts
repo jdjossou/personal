@@ -8,10 +8,26 @@ import type { ProjectStatus } from './projects'
 
 // --- Quest-list chrome (Task 02) -------------------------------------------
 // Static section chrome, repurposed from P3R's Quest screen: the QUEST header →
-// PROJECTS title, the "Sort by No." affordance, and the bottom "which one?" hint.
+// PROJECTS title, the "Sort by …" affordance, and the bottom "which one?" hint.
 export const SECTION_TITLE = 'PROJECTS'
-export const SORT_HINT = 'Sort by No.'
 export const VIEW_HINT = 'Which project do you want to view?'
+
+// --- Sort control (Task 05) ------------------------------------------------
+// The reference's "Sort by No." is a live control that cycles through three
+// orderings. The labels echo the reference; 'index' (default) keeps the order
+// authored in projects.ts so the page reads "Sort by No." at rest. Sorting only
+// re-orders the displayed /01 /02 numbers — each project keeps its slug, so
+// deep links never move (see QuestList).
+export type SortMode = 'index' | 'date' | 'status'
+
+// Cycle order when the control is pressed: No. → Date → Status → No.
+export const SORT_CYCLE: readonly SortMode[] = ['index', 'date', 'status']
+
+export const SORT_LABELS: Record<SortMode, string> = {
+  index: 'Sort by No.',
+  date: 'Sort by Date',
+  status: 'Sort by Status',
+}
 
 // Per-status badge copy. The data enum stays IN_PROGRESS/DONE; these are only
 // the display labels (DONE reads "DONE", echoing the reference's chip).
