@@ -1,6 +1,7 @@
-import { SectionPlaceholder } from '@/components/SectionPlaceholder/SectionPlaceholder'
+import { StatScreen } from '@/components/Education/StatScreen'
 
-// Placeholder so the menu's EDUCATION route resolves end-to-end (Task 06).
+// The EDUCATION route renders the Persona "Check Stats" screen (Task 02): a
+// profile header + numbered course ability rows over the shared P3R background.
 export default function EducationPage() {
-  return <SectionPlaceholder title="Education" />
+  return <StatScreen />
 }
