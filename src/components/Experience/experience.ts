@@ -1,19 +1,21 @@
 // Experience "Social Link" data — the single source of truth the whole page
-// renders over (the bond roster, the journal/detail panel, the company tarot
-// card, and the `/experience/<slug>` deep link all read from here). Pure data +
-// the types that describe it: no React, no DOM, no helper logic (formatting /
-// lookup live in helpers.ts; tunable look lives in constants.ts). This is the
-// one file you edit to add a job.
+// renders over (the angled info card, the star-bullet job description, the
+// company icon, the bottom-right identity panel, and the `/experience/<slug>`
+// deep link all read from here). Pure data + the types that describe it: no
+// React, no DOM, no helper logic (formatting / lookup live in helpers.ts;
+// tunable look lives in constants.ts). This is the one file you edit to add a
+// job.
 //
 // Adding a future role is meant to be a single, obvious append to ROLES below —
 // no UI code touched. That is the success test for this layer.
 //
-// **Voice:** `journal` is the deliverable, not a résumé bullet. Write it in the
-// first person, past tense, outcome-oriented — "I built X, which helped Y."
-//   Bad:  "Responsible for the billing service."
-//   Good: "I rebuilt the billing service around idempotent webhooks, which cut
-//          failed renewals ~30%."
-// Keep every entry in this voice; it is the whole point of the section.
+// **Voice:** `bullets` are resume-style accomplishment lines (the ★ list on the
+// left), first person, past/present tense, outcome-oriented — "Built X, which
+// did Y." `summary` is the one-sentence "what this experience is" shown in the
+// bottom-right identity panel — shorter and more descriptive than the bullets.
+//   Bad bullet:  "Responsible for the billing service."
+//   Good bullet: "Rebuilt the billing service around idempotent webhooks, which
+//                 cut failed renewals ~30%."
 
 export type RoleLink = {
   label: string // "GitHub", "Case study", "Demo", "Writeup"…
@@ -22,73 +24,111 @@ export type RoleLink = {
 }
 
 export type Role = {
-  // `slug` is the contract with selection (Task 03) + the deep link
-  // (`/experience/<slug>`). URL-safe, stable, unique — changing it breaks any
-  // shared link to this role. Same discipline as Project.slug / Term.slug.
+  // `slug` is the contract with selection + the deep link (`/experience/<slug>`).
+  // URL-safe, stable, unique — changing it breaks any shared link to this role.
   slug: string
-  company: string // → the big arcana-name ("Magician") slot — dominant label
-  role: string // job title → the relationship-label ("Classmate") slot
-  location: string // → the "ARCANA" micro-label slot ("Toronto, ON" / "Remote")
+  company: string // → the info card's black header strip + the identity-panel name
+  role: string // experience title → the big black text in the white card panel
+  location: string // → the small angled black tab on the card's left edge
   start: string // ISO 'YYYY-MM'
   // `end` omitted ⇒ current role → the date range reads "… — Present" and fills
-  // the reference's "RANK n" slot (formatDateRange in helpers.ts).
+  // the right side of the white card panel (formatDateRange in helpers.ts).
   end?: string
-  // '/assets/experience/acme.svg' — drives the company tarot card. Optional: a
-  // logo-less company falls back to a monogram system card (never an empty frame).
-  logo?: string
-  companyBlurb?: string // optional one-line "what this place is" → bottom-right bio slot
-  journal: string // THE journal paragraph (= the job description). See **Voice:** above.
+  // The ★ resume bullets — the left-side job description. See **Voice:** above.
+  bullets: readonly string[]
+  // The one-sentence summary shown in the bottom-right identity panel. See **Voice:**.
+  summary: string
+  // The technologies used — rendered as small angular tags in the identity panel.
+  technologies: readonly string[]
   links?: readonly RoleLink[] // optional
 }
 
-// NOTE: there is intentionally NO arcana / rank / employment-type field — those
-// reference slots are reused for company / dates / job title per the fixed
-// mapping (00-overview.md), so there is no invented flavour data to drift.
+// ⚠️ SCAFFOLD — VERIFY THIS. These entries use the company names called out in
+// docs/experience/redesign.md as a starting shape; the dates, bullets, tech, and
+// summaries are plausible placeholders meant to be replaced with your real
+// experience. Befriend's copy is lifted from the redesign's own examples (§5/§9.2).
 //
 // Order is intentional: MOST RECENT FIRST. The displayed roster order and the
-// /01 /02 numbering (Task 02) derive from this array order, NOT a stored field —
-// reorder these entries to reorder the bond roster.
+// /01 /02 numbering derive from this array order, NOT a stored field — reorder
+// these entries to reorder the roster.
 export const ROLES: readonly Role[] = [
   {
-    // ⚠️ SEED — VERIFY THIS. Placeholder current role — replace company, title,
-    // location, dates, and journal with your real, in-progress co-op.
-    slug: 'current-co-op-software',
-    company: 'Acme Systems',
-    role: 'Software Engineer Intern',
-    location: 'Toronto, ON',
-    start: '2026-05',
-    companyBlurb: 'Logistics platform for mid-market freight carriers.',
-    journal:
-      'I am building the carrier-onboarding service that turns a new partner from signup to first shipment, which trimmed manual setup from days to under an hour. I designed the document-verification pipeline around a small state machine so a stuck application is always inspectable rather than silently lost.',
-  },
-  {
-    // ⚠️ SEED — VERIFY THIS. Placeholder past role.
-    slug: 'past-co-op-backend',
-    company: 'Northwind Labs',
-    role: 'Backend Developer Intern',
-    location: 'Remote',
+    slug: 'intact',
+    company: 'Intact Financial Corporation',
+    role: 'Software Developer I - Backend',
+    location: 'Montreal',
     start: '2025-09',
     end: '2025-12',
-    companyBlurb: 'Developer-tooling startup for observability pipelines.',
-    journal:
-      'I rebuilt the log-ingestion path around batched, idempotent writes, which cut dropped events to near zero during traffic spikes and let us replay any window without duplicates. I added the back-pressure metrics the on-call team had been flying blind without, so incidents got caught at the source instead of at the dashboard.',
+    summary:
+      'A backend co-op shipping production features across Spring Boot microservices for Canada’s largest property & casualty insurer.',
+    bullets: [
+      'Designed and shipped backend features across Spring Boot microservices using Java, Kubernetes, and Kafka.',
+      'Implemented a multilingual logo-selection system across Angular and Thymeleaf services, deployed to production with full test coverage.',
+      'Increased test coverage up to 90% across 3 Spring Boot services using JUnit and Spring Boot Test, reducing the risk of regression in critical flows.',
+      'Resolved critical SOAP and REST API issues, improving reliability and cross-team integrations.',
+      'Led observability efforts by adding service-level metrics and building Dynatrace dashboards for 7 services.',
+    ],
+    technologies: [
+      'Java', 'Spring Boot', 'Kubernetes', 'Kafka', 'Angular', 'Thymeleaf',
+      'JUnit', 'Spring Boot Test', 'SOAP', 'REST API', 'Dynatrace',
+    ],
+  },
+  {
+    // ⚠️ SCAFFOLD — VERIFY THIS.
+    slug: 'watplan',
+    company: 'WatPlan',
+    role: 'Full-Stack Developer',
+    location: 'Waterloo, ON',
+    start: '2024-01',
+    end: '2024-04',
+    summary:
+      'A degree-planning tool that maps Waterloo course requirements onto a visual term-by-term roadmap.',
+    bullets: [
+      'Built a course-planning web app that turns a tangle of prerequisites into a clear term-by-term roadmap.',
+      'Modelled the requirement graph and wrote the validator that flags missing prerequisites before a plan is saved.',
+      'Shipped a responsive drag-and-drop board so students can rearrange courses across terms on any device.',
+    ],
+    technologies: ['Next.js', 'React', 'TypeScript', 'MongoDB', 'Tailwind CSS'],
     links: [
       {
-        label: 'Writeup',
-        href: 'https://example.com/writeup',
+        label: 'GitHub',
+        href: 'https://example.com/watplan',
         newTab: true,
       },
     ],
   },
   {
-    // ⚠️ SEED — VERIFY THIS. Placeholder earliest role (no logo → monogram card).
-    slug: 'first-co-op-fullstack',
-    company: 'Bridgeline',
-    role: 'Full-Stack Developer Intern',
-    location: 'Waterloo, ON',
-    start: '2025-01',
-    end: '2025-04',
-    journal:
-      'I shipped the self-serve reporting page that let account managers pull their own numbers, which removed a recurring weekly ask from the engineering queue. I built it as a thin query layer over the existing warehouse so adding a new report became a config change, not a deploy.',
+    // ⚠️ SCAFFOLD — VERIFY THIS.
+    slug: 'mcgill-research',
+    company: 'McGill University',
+    role: 'Chemistry Research Intern',
+    location: 'Montréal, QC',
+    start: '2023-05',
+    end: '2023-08',
+    summary:
+      'A summer research role building data-processing tooling for a computational chemistry lab.',
+    bullets: [
+      'Wrote Python pipelines that cleaned and aggregated raw spectrometer output for downstream analysis.',
+      'Automated a manual reporting workflow, cutting a recurring multi-hour task to a single command.',
+      'Collaborated with graduate researchers to translate experimental needs into reusable scripts.',
+    ],
+    technologies: ['Python', 'NumPy', 'pandas', 'Matplotlib', 'Git'],
+  },
+  {
+    // ⚠️ SCAFFOLD — VERIFY THIS.
+    slug: 'cineplex',
+    company: 'Cineplex',
+    role: 'Software Developer Intern',
+    location: 'Toronto, ON',
+    start: '2022-09',
+    end: '2022-12',
+    summary:
+      'A backend internship on the services that power ticketing and loyalty across the theatre network.',
+    bullets: [
+      'Implemented and tested REST endpoints for the loyalty service used across the booking flow.',
+      'Added integration tests that caught regressions before release and raised confidence in deploys.',
+      'Paired with senior engineers to ship a caching layer that trimmed response times on hot paths.',
+    ],
+    technologies: ['C#', '.NET', 'SQL Server', 'Azure', 'Git'],
   },
 ] as const

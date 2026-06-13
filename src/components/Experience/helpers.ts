@@ -5,18 +5,23 @@
 
 import { ROLES, type Role } from './experience'
 
-// 'YYYY-MM' / 'YYYY-MM-DD' → 'YYYY.MM' (drops any day component). Mirrors the
-// dotted-month idiom in Projects/helpers.ts.
-const toDottedMonth = (iso: string): string => {
+// 'YYYY-MM' / 'YYYY-MM-DD' → 'Sep 2025' (abbreviated month + year). The date
+// range sits in the white card panel, so it reads as a human label rather than
+// the dotted-numeric idiom used elsewhere.
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+] as const
+const toMonthYear = (iso: string): string => {
   const [year, month] = iso.split('-')
-  return month ? `${year}.${month}` : year
+  return month ? `${MONTHS[Number(month) - 1]} ${year}` : year
 }
 
-// Format a role's date span for the "RANK n" slot, e.g. `2025.05 — 2025.08`.
-// When `end` is omitted the role is current and reads `2025.05 — Present` (unlike
-// Projects' open-ended `2025.05 — `, Experience names the live state explicitly).
+// Format a role's date span for the white card's right slot, e.g.
+// `Sep 2025 – Dec 2025`. When `end` is omitted the role is current and reads
+// `Sep 2025 – Present`.
 export const formatDateRange = (start: string, end?: string): string =>
-  `${toDottedMonth(start)} — ${end ? toDottedMonth(end) : 'Present'}`
+  `${toMonthYear(start)} – ${end ? toMonthYear(end) : 'Present'}`
 
 // Resolve a role from its stable `slug` — used by the deep-link resolver (Task
 // 03) to open a role directly from `/experience/<slug>`. Returns undefined for an
