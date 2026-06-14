@@ -23,6 +23,7 @@
 import {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
+  RefObject,
   useEffect,
   useRef,
   useState,
@@ -63,7 +64,16 @@ const hash = (n: number): number => {
   return s - Math.floor(s)
 }
 
-export function TechStack({ technologies }: { technologies: readonly string[] }) {
+export function TechStack({
+  technologies,
+  scaleRef,
+}: {
+  technologies: readonly string[]
+  // Live stage scale (the desktop canvas is transform-scaled). Drag deltas arrive
+  // in screen px, so we divide by it to map them back into stage space → the token
+  // tracks the cursor 1:1 regardless of how small the canvas is scaled.
+  scaleRef?: RefObject<number>
+}) {
   const n = technologies.length
   // Loose grid for the home scatter.
   const cols = Math.max(1, Math.ceil(Math.sqrt(n)))
@@ -123,13 +133,14 @@ export function TechStack({ technologies }: { technologies: readonly string[] })
   const onPointerMove = (i: number) => (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current
     if (!d || d.i !== i) return
-    // Translate follows the pointer.
-    const nx = d.ox + (e.clientX - d.px)
-    const ny = d.oy + (e.clientY - d.py)
+    // Translate follows the pointer (screen px → stage px via the live scale).
+    const s = scaleRef?.current || 1
+    const nx = d.ox + (e.clientX - d.px) / s
+    const ny = d.oy + (e.clientY - d.py) / s
     setOffsets((prev) => prev.map((p, idx) => (idx === i ? { x: nx, y: ny } : p)))
     // Horizontal step since the last move feeds spin — shaking left/right makes
     // the token wobble, a fast flick spins it (the spring then unwinds it).
-    const dx = e.clientX - d.lastX
+    const dx = (e.clientX - d.lastX) / s
     d.lastX = e.clientX
     physics.current[i].vel += TECH_SHAKE_GAIN * dx
   }
@@ -176,8 +187,8 @@ export function TechStack({ technologies }: { technologies: readonly string[] })
           // collapsed to a single rounded length (see zone* notes above).
           const fx = col + hash(i * 12.9898) * 0.55
           const fy = row + hash(i * 78.233) * 0.55
-          const left = `${(zoneLeft + (fx * zoneWidth) / cols).toFixed(4)}vw`
-          const top = `${(zoneTop + (fy * zoneHeight) / rows).toFixed(4)}vh`
+          const left = `${(zoneLeft + (fx * zoneWidth) / cols).toFixed(4)}cqw`
+          const top = `${(zoneTop + (fy * zoneHeight) / rows).toFixed(4)}cqh`
 
           // Per-token float params, all derived from the index (deterministic).
           // Rounded so the inline values round-trip through the browser's CSSOM

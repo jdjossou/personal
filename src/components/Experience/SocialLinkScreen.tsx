@@ -43,8 +43,13 @@ import {
   NAV_TOP,
   NAV_WIDTH,
   SECTION_TITLE,
+  STAGE_MAX_SCALE,
+  STAGE_REF_H,
+  STAGE_REF_W,
   TAG_FILL,
   TECH_TITLE,
+  TECH_TITLE_OUTLINE,
+  TECH_TITLE_OUTLINE_COLOR,
   TECH_TOKEN_CLIP,
   TECH_TOKEN_OUTLINE,
   TECH_TOKEN_SIZE,
@@ -98,13 +103,51 @@ export function SocialLinkScreen() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  // Desktop scale-to-fit: author the collage at STAGE_REF and scale it as one
+  // rigid unit to fit the window. Written to a CSS var imperatively (no re-render);
+  // also kept in a ref so the TechStack drag handler can divide pointer deltas by
+  // the live scale (screen px → stage px).
+  const stageRef = useRef<HTMLDivElement>(null)
+  const scaleRef = useRef(1)
+  useEffect(() => {
+    const update = () => {
+      const s = Math.min(
+        window.innerWidth / STAGE_REF_W,
+        window.innerHeight / STAGE_REF_H,
+        STAGE_MAX_SCALE,
+      )
+      scaleRef.current = s
+      stageRef.current?.style.setProperty('--stage-scale', String(s))
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
   return (
     <main className="fixed inset-0 z-0 overflow-y-auto bg-transparent select-none md:overflow-hidden">
       {/* No darkening veil — the animated blue water shows through clean; each
           element carries its own shadow/outline for legibility. */}
 
-      {/* ===== DESKTOP — absolute collage ===== */}
-      <div className="relative z-10 hidden h-full w-full md:block">
+      {/* ===== DESKTOP — scale-to-fit canvas (proportions locked) ===== */}
+      <div className="absolute inset-0 z-10 hidden overflow-hidden md:block">
+        {/* STAGE — fixed reference size + `container-type: size` (so the cqw/cqh
+            dials resolve against THIS box, not the viewport), scaled as one rigid
+            unit to fit the window and ANCHORED TO THE LEFT EDGE (vertically centred)
+            so left-side components start flush at the screen's left edge at every
+            size; any leftover space falls on the right, where the water fills it. */}
+        <div
+          ref={stageRef}
+          className="absolute top-1/2 left-0"
+          style={{
+            width: `${STAGE_REF_W}px`,
+            height: `${STAGE_REF_H}px`,
+            containerType: 'size',
+            transform: 'translateY(-50%) scale(var(--stage-scale, 1))',
+            transformOrigin: 'left center',
+            willChange: 'transform',
+          }}
+        >
         {/* EXPERIENCE title + detail card — one stacked column, so the card always
             sits directly beneath the title (CARD_GAP apart) no matter the title
             size. The column is placed by TITLE_TOP / TITLE_LEFT. */}
@@ -151,7 +194,7 @@ export function SocialLinkScreen() {
 
         {/* TECH STACK title + floating draggable tech tokens — zone below the card,
             on the left. (Renders its own absolute title + stage-spanning layer.) */}
-        <TechStack technologies={role.technologies} />
+        <TechStack technologies={role.technologies} scaleRef={scaleRef} />
 
         {/* ★ Job HIGHLIGHTS — the scattered comic-frame collage filling the right
             side and flowing into the freed bottom-right space (logo removed). */}
@@ -171,6 +214,7 @@ export function SocialLinkScreen() {
           >
             ← Back to menu
           </button>
+        </div>
         </div>
       </div>
 
@@ -193,6 +237,7 @@ export function SocialLinkScreen() {
           dates={dates}
           roleCount={ROLES.length}
           activeIndex={activeIndex}
+          mobile
         />
 
         {/* ★ Job HIGHLIGHTS — the comic frames, collapsed to a readable stack. */}
@@ -201,7 +246,12 @@ export function SocialLinkScreen() {
         {/* TECH STACK — static wrapped tags on mobile (no drag/float). Two-layer
             outline so the cyan rim follows the full slanted shape (change 4). */}
         <div className="flex flex-col gap-3">
-          <p className="font-display tracking-[-0.03em] text-white uppercase">{TECH_TITLE}</p>
+          <p
+            className="font-display text-4xl font-black tracking-[-0.03em] text-white uppercase"
+            style={{ WebkitTextStroke: `${TECH_TITLE_OUTLINE} ${TECH_TITLE_OUTLINE_COLOR}` }}
+          >
+            {TECH_TITLE}
+          </p>
           <ul className="flex flex-wrap gap-2">
             {role.technologies.map((tech) => (
               <li key={tech} className="relative">

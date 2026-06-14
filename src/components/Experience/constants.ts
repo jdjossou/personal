@@ -4,6 +4,15 @@
 // the vertical indicator, and the clip-paths). Constants only: role data lives in
 // experience.ts and formatting/lookup in helpers.ts. Kept React/DOM-free so the
 // components stay logic-free, same split as Education/constants.ts and Projects/constants.ts.
+//
+// DESKTOP IS A SCALE-TO-FIT CANVAS. The desktop collage is rendered inside a
+// fixed-size STAGE (STAGE_REF_W × STAGE_REF_H, see below) that declares
+// `container-type: size` and is then `transform: scale()`d as one unit to fit the
+// window — so the whole composition keeps its exact proportions at every width and
+// can never overlap or clip. For that to hold, every desktop position/size below is
+// expressed in CONTAINER units (`cqw`/`cqh` = 1% of the fixed stage, NOT the
+// viewport); `rem`/`px`/`%` already scale with the stage transform. Mobile uses a
+// separate stacked flow and its own `vw`/`rem` sizes (it is not scaled).
 
 // --- Screen chrome ----------------------------------------------------------
 // The screen is titled EXPERIENCE (top-left, sitting above the detail card) and
@@ -15,13 +24,14 @@ export const NAV_NEXT = 'Next'
 // --- Sizing & typography (the dials) ----------------------------------------
 // Everything visual that you'll want to nudge while matching the reference, in
 // one place. Values are raw CSS strings so they can be dropped straight into
-// inline `style`; `clamp(min, fluid, max)` keeps a value responsive (it grows
-// with the viewport between min and max) without needing Tailwind breakpoints.
+// inline `style`; `clamp(min, fluid, max)` keeps a value responsive. On the
+// desktop stage the fluid term is `cqw` (tracks the canvas), so the value is
+// effectively constant per stage and the stage transform scales it.
 // Skews are kept as their own dials so the whole screen can lean together.
 
 // EXPERIENCE section title (top-left / mobile heading).
-export const TITLE_SIZE = 'clamp(3rem, 10vw, 12rem)' // desktop fluid headline
-export const TITLE_SIZE_MOBILE = '3.75rem' // mobile stacked heading
+export const TITLE_SIZE = 'clamp(3rem, 10cqw, 12rem)' // desktop fluid headline (stage units)
+export const TITLE_SIZE_MOBILE = 'clamp(2.5rem, 11vw, 3.75rem)' // mobile stacked heading
 export const TITLE_SKEW = '-4deg' // forward lean of the title
 export const TITLE_TRACKING = '-0.02em' // letter-spacing
 
@@ -41,10 +51,10 @@ export const PAGER_PIP_IDLE = '0.45rem' // the faint, unselected pips
 export const PAGER_GAP = '0.5rem' // space between pips
 
 // Detail card (white/black parallelogram) text.
-export const CARD_TITLE_SIZE = 'clamp(1.25rem, 2.75vw, 4rem)' // big role title
+export const CARD_TITLE_SIZE = 'clamp(1.25rem, 2.75cqw, 4rem)' // big role title (stage units)
 export const CARD_TITLE_SKEW = '-7deg' // lean of the role title
-export const CARD_COMPANY_SIZE = 'clamp(1.25rem, 2vw, 1.5rem)' // company in black panel
-export const CARD_DATE_SIZE = 'clamp(1.25rem, 2vw, 1.5rem)' // date range, upper-right
+export const CARD_COMPANY_SIZE = 'clamp(1.25rem, 2cqw, 1.5rem)' // company in black panel
+export const CARD_DATE_SIZE = 'clamp(1.25rem, 2cqw, 1.5rem)' // date range, upper-right
 
 // ★ Job HIGHLIGHTS — a scattered comic-frame collage (JobPanels). Each bullet is
 // its own ink-bordered comic frame; the frames are deliberately NOT left-aligned
@@ -59,16 +69,16 @@ export const COMIC_TEXT_COLOR = '#0B0D12' // ink text on paper frames
 export const COMIC_HALFTONE_COLOR = 'rgba(11, 13, 18, 0.22)' // dot texture on paper frames
 
 // Frame layout — base vertical rhythm + the collage overlap (negative = frames
-// tuck under each other).
+// tuck under each other). Desktop overlap is in stage units (cqh).
 export const COMIC_FRAME_PAD = '0.7rem 1rem'
-export const COMIC_FRAME_OVERLAP = '-0.6vh' // vertical tuck between consecutive frames
+export const COMIC_FRAME_OVERLAP = '-0.6cqh' // vertical tuck between consecutive frames
 
 // Per-point variance — indexed by bullet position (wraps via modulo). The jagged
 // left OFFSETS are the heart of the look; WIDTHS/TILTS/SIZES add energy. Colour no
 // longer alternates: every frame shares one scheme (white paper, black ink rim,
 // red corner star) so the collage reads as a single unified comic surface.
-export const COMIC_OFFSETS = ['0vw', '5vw', '1.5vw', '7vw', '3vw'] // left indent → jagged edges
-export const COMIC_WIDTHS = ['30vw', '27vw', '33vw', '25vw', '29vw'] // frame width
+export const COMIC_OFFSETS = ['0cqw', '5cqw', '1.5cqw', '7cqw', '3cqw'] // left indent → jagged edges
+export const COMIC_WIDTHS = ['30cqw', '27cqw', '33cqw', '25cqw', '29cqw'] // frame width
 export const COMIC_TILTS = ['-2.5deg', '1.5deg', '-1.5deg', '2deg', '-2deg'] // frame rotation (kept small → readable)
 export const COMIC_SIZES = ['1.3rem', '1rem', '1.1rem', '0.95rem', '1.2rem'] // text size hierarchy
 
@@ -78,19 +88,19 @@ export const COMIC_SIZES = ['1.3rem', '1rem', '1.1rem', '0.95rem', '1.2rem'] // 
 // dragged. Their start + default-float positions are seeded inside an invisible
 // ZONE (TECHZONE_*) below the card; they can be dragged anywhere and stay put.
 export const TECH_TITLE = 'TECH STACK'
-export const TECH_TITLE_SIZE = 'clamp(2rem, 4vw, 3.4rem)' // bigger
+export const TECH_TITLE_SIZE = 'clamp(2.8rem, 4cqw, 3.4rem)' // bigger (stage units); higher floor so mobile reads large
 export const TECH_TITLE_SKEW = '-7deg' // slight forward tilt
 export const TECH_TITLE_OUTLINE = '1px' // thin black ink stroke traced around the caps (no shadow)
 export const TECH_TITLE_OUTLINE_COLOR = '#0B0D12'
-export const TECH_TITLE_TOP = '45vh' // below the white card + its shadow
-export const TECH_TITLE_LEFT = '2vw'
+export const TECH_TITLE_TOP = '45cqh' // below the white card + its shadow
+export const TECH_TITLE_LEFT = '2cqw'
 
 // The invisible seeding zone (offsets from the stage; tokens scatter inside it).
 // Starts below the TECH STACK title (TECH_TITLE_TOP) so tokens don't overlap it.
-export const TECHZONE_TOP = '58vh'
-export const TECHZONE_LEFT = '3vw'
-export const TECHZONE_WIDTH = '40vw'
-export const TECHZONE_HEIGHT = '30vh'
+export const TECHZONE_TOP = '58cqh'
+export const TECHZONE_LEFT = '3cqw'
+export const TECHZONE_WIDTH = '40cqw'
+export const TECHZONE_HEIGHT = '30cqh'
 
 // Token look + float dynamics.
 export const TECH_TOKEN_SIZE = '0.8rem'
@@ -107,22 +117,33 @@ export const TECH_SPRING_DAMP = 6 // damping — higher settles with less wobble
 export const TECH_SHAKE_GAIN = 1.2 // deg/s of spin per px of horizontal drag step
 export const TECH_SPIN_MAX = 720 // clamp on angular velocity (deg/s), avoids runaway
 
+// --- Desktop stage (scale-to-fit canvas) ------------------------------------
+// The desktop collage is authored at this fixed reference size and scaled as one
+// rigid unit to fit the window (the global P3R water fills the surround). All the
+// desktop positions below are `cqw`/`cqh` against this box, so the composition is
+// proportion-locked at every width. Tune REF to match the screen the look was
+// dialled in on so scale ≈ 1 there; MAX_SCALE caps growth on very large displays.
+export const STAGE_REF_W = 1536 // px — reference canvas width
+export const STAGE_REF_H = 960 // px — reference canvas height (16:10)
+export const STAGE_MAX_SCALE = 3 // safety cap only; high so big screens FILL (the canvas grows to use the space, left-anchored) instead of sitting boxed in margins
+
 // --- Layout & positions (desktop collage) -----------------------------------
-// Where each block sits on the desktop stage and how wide it is. Every block is
+// Where each block sits on the desktop STAGE and how wide it is. Every block is
 // absolutely positioned, so these are its offset(s) from the stage edges plus a
-// width. Values are CSS lengths — `vw`/`vh` (% of viewport width/height), `%`
-// (of the stage), or `rem`. Mobile uses a simple stacked flow and ignores these.
+// width. Values are CONTAINER units — `cqw`/`cqh` (% of the fixed stage width/
+// height), `%` (of the parent), or `rem`. Mobile uses a simple stacked flow and
+// ignores these.
 
 // EXPERIENCE title (top-left).
-export const TITLE_TOP = '2vh'
-export const TITLE_LEFT = '0vw'
+export const TITLE_TOP = '2cqh'
+export const TITLE_LEFT = '0cqw'
 
 // Prev / Next row. NAV_INSET_X is the side padding that pushes the two controls
 // inward from the row's edges (Prev from the left, Next from the right).
-export const NAV_TOP = '12vh'
-export const NAV_LEFT = '-2.5vw'
-export const NAV_WIDTH = '50.5vw'
-export const NAV_INSET_X = '4.5vw'
+export const NAV_TOP = '12cqh'
+export const NAV_LEFT = '-2.5cqw'
+export const NAV_WIDTH = '50.5cqw'
+export const NAV_INSET_X = '4.5cqw'
 
 // Detail card (white/black parallelogram). The card is stacked directly beneath
 // the EXPERIENCE title in one column, so it has no top/left of its own: the
@@ -132,31 +153,31 @@ export const NAV_INSET_X = '4.5vw'
 // some slack under the caps, so a negative value is normal to close that). This
 // way the card always tracks the title, whatever size the title is. CARD_WIDTH
 // sets the column (and therefore the card) width.
-export const CARD_GAP = '-2vh'
+export const CARD_GAP = '-2cqh'
 // width of the white card
-export const CARD_WIDTH = '44vw' 
+export const CARD_WIDTH = '44cqw'
 // Height of the white card. Use 'auto' to let it grow with its content (company
-// panel + role title); set a fixed length (vw/vh/rem/%) to pin it — note that
-// the white card's clip-path will crop anything taller than this.
-export const CARD_HEIGHT = '26.67vh'
+// panel + role title); set a fixed length to pin it — note that the white card's
+// clip-path will crop anything taller than this.
+export const CARD_HEIGHT = '26.67cqh'
 
-// White card overhang past the left screen edge. The black panel is clipped to
+// White card overhang past the left stage edge. The black panel is clipped to
 // the white card, so this also caps how far the black panel can bleed left:
 // raise it to let the black bleed further off-canvas (positive = more overhang).
-export const CARD_BLEED_LEFT = '3vw'
+export const CARD_BLEED_LEFT = '3cqw'
 
 // --- Detail-card internals (fully positioned) -------------------------------
 // Everything inside the white card, each independently movable + sizable. X/Y
 // are offsets from the element's natural spot: positive X = right, negative =
 // left; positive Y = down, negative = up. WIDTH/HEIGHT size the box ('auto' =
-// fit the content). Lengths are CSS units (vw/vh/%/rem).
+// fit the content). Lengths are container units (cqw/cqh/%/rem).
 
 // BLACK company panel. A big negative CARD_BLACK_X bleeds it off the left edge
 // (it's clipped to the white card — see CARD_BLEED_LEFT to let it go further).
-export const CARD_BLACK_X = '-5vw' // horizontal offset (− = toward/off left edge)
-export const CARD_BLACK_Y = '-2vh' // vertical offset (− = up, + = down)
-export const CARD_BLACK_WIDTH = '44vw' // panel width (of the white card)
-export const CARD_BLACK_HEIGHT = '10vh' // panel height ('auto' = fit the company text)
+export const CARD_BLACK_X = '-5cqw' // horizontal offset (− = toward/off left edge)
+export const CARD_BLACK_Y = '-2cqh' // vertical offset (− = up, + = down)
+export const CARD_BLACK_WIDTH = '44cqw' // panel width (of the white card)
+export const CARD_BLACK_HEIGHT = '10cqh' // panel height ('auto' = fit the company text)
 
 // COMPANY name — bottom-aligned inside the black panel; this is its gap from the
 // panel's bottom edge.
@@ -167,8 +188,8 @@ export const CARD_COMPANY_BOTTOM = '0.875rem'
 // the gap above the stack; CARD_TITLE_DATE_GAP the gap between title and date.
 // MAXW caps the title width so a long title wraps before crossing the white
 // card's slanted right edge (and stays on one line when it fits).
-export const CARD_TITLE_TOP = '2.5vh' // gap above the title + date stack
-export const CARD_TITLE_DATE_GAP = '0.7vh' // gap between title and date
+export const CARD_TITLE_TOP = '2.5cqh' // gap above the title + date stack
+export const CARD_TITLE_DATE_GAP = '0.7cqh' // gap between title and date
 export const CARD_TITLE_MAXW = '90%' // max title width before it wraps
 export const CARD_DATE_RIGHT = '7%' // right indent of the title + date stack
 
@@ -177,37 +198,37 @@ export const CARD_DATE_RIGHT = '7%' // right indent of the title + date stack
 // LOCATION_TRI_CLIP (in the clip-paths section). The text inside is placed and
 // angled independently via LOCATION_TEXT_* below, so it can ride along the
 // triangle's bottom-right edge.
-export const LOCATION_TOP = '8.333vh' // vertical spot (relative to black panel)
-export const LOCATION_LEFT = '2vw' // horizontal spot (relative to black panel)
-export const LOCATION_WIDTH = '15vw' // pennant width ('auto' = fit the location text)
-export const LOCATION_HEIGHT = '6.667vh' // pennant height (the text is absolute, so set it here)
+export const LOCATION_TOP = '8.333cqh' // vertical spot (relative to black panel)
+export const LOCATION_LEFT = '2cqw' // horizontal spot (relative to black panel)
+export const LOCATION_WIDTH = '15cqw' // pennant width ('auto' = fit the location text)
+export const LOCATION_HEIGHT = '6.667cqh' // pennant height (the text is absolute, so set it here)
 
 // LOCATION text — positioned inside the pennant, independent of the pennant's
 // shape. TOP/LEFT place the text within the pennant; SIZE sets the font size. The
 // angle is NOT a dial — it's computed at render time from the pennant's measured
 // size + LOCATION_TRI_POINT_X so the text always rides exactly along the
 // triangle's bottom-right edge (see ExperienceCard).
-export const LOCATION_TEXT_TOP = '3.5vh' // text vertical spot (within the pennant)
-export const LOCATION_TEXT_LEFT = '1.5vw' // text horizontal spot (within the pennant)
+export const LOCATION_TEXT_TOP = '3.5cqh' // text vertical spot (within the pennant)
+export const LOCATION_TEXT_LEFT = '1.5cqw' // text horizontal spot (within the pennant)
 export const LOCATION_TEXT_SIZE = '1.2rem' // location pennant text size
 
 // ★ Job HIGHLIGHTS collage — right side, starts high and flows down into the
 // freed bottom-right space (the logo plate was removed). The container is placed
 // by these dials; per-frame offsets/widths live in the COMIC_* arrays above.
-export const BULLETS_TOP = '13vh'
-export const BULLETS_RIGHT = '3.5vw'
-export const BULLETS_WIDTH = '46vw'
+export const BULLETS_TOP = '13cqh'
+export const BULLETS_RIGHT = '3.5cqw'
+export const BULLETS_WIDTH = '46cqw'
 
 // Back-to-menu control (bottom-RIGHT, sharing the logo plate's right edge, sitting
 // below it). Wired like the rest of the site (handoff → main menu).
-export const BACK_BOTTOM = '3vh'
-export const BACK_RIGHT = '3vw'
+export const BACK_BOTTOM = '3cqh'
+export const BACK_RIGHT = '3cqw'
 
 // Vertical experience indicator — a column of pips just RIGHT of the white card,
 // vertically centred on the card and leaned to PARALLEL the card's slanted right
 // edge. The angle is NOT a fixed dial: CARD_WHITE_CLIP's right edge runs 100% top →
-// 90% bottom, and the card mixes vw width with vh height, so the real on-screen
-// lean depends on the viewport. ExperienceCard measures the card and computes the
+// 90% bottom, and the card mixes cqw width with cqh height, so the real on-screen
+// lean depends on the stage. ExperienceCard measures the card and computes the
 // angle (same approach as the location-pennant text). INDICATOR_GAP is the gap
 // placed to the right of the card's shadow.
 export const INDICATOR_GAP = '0.75rem'
@@ -231,8 +252,8 @@ export const CARD_PAPER = '#F3F5F8' // off-white main parallelogram
 
 // Drop-shadow card — a semi-transparent black copy of the white parallelogram,
 // layered behind it and offset down/right so it reads as a cast shadow (change 5).
-export const CARD_SHADOW_X = '1vh' // horizontal offset (+ = right)
-export const CARD_SHADOW_Y = '1vw' // vertical offset (+ = down)
+export const CARD_SHADOW_X = '1cqh' // horizontal offset (+ = right)
+export const CARD_SHADOW_Y = '1cqw' // vertical offset (+ = down)
 export const CARD_SHADOW_FILL = 'rgba(0, 0, 0, 0.45)'
 
 // --- Navy / tag palette -----------------------------------------------------
@@ -268,6 +289,12 @@ export const CARD_BLACK_CLIP =
 // this point (X 100%); the location text is angled to ride along that edge.
 export const LOCATION_TRI_POINT_X = 10
 export const LOCATION_TRI_CLIP = `polygon(0 0, 100% 0, ${LOCATION_TRI_POINT_X}% 100%)`
+
+// Mobile location chip — a compact angular tab carrying the location in normal
+// (horizontal, readable) flow, with a small downward point. Used by the mobile
+// card branch instead of the desktop pennant so the text can never spill.
+export const LOCATION_MOBILE_CLIP =
+  'polygon(0 0, 100% 0, 100% 62%, 52% 100%, 0 62%)'
 
 // Tech token (floating chip) — a leaning parallelogram, same angular idiom as the
 // bullet chips. Reused for each draggable technology token (change 4).

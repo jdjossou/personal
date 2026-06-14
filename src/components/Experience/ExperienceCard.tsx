@@ -42,6 +42,7 @@ import {
   INDICATOR_GAP,
   LOCATION_HEIGHT,
   LOCATION_LEFT,
+  LOCATION_MOBILE_CLIP,
   LOCATION_TEXT_LEFT,
   LOCATION_TEXT_SIZE,
   LOCATION_TEXT_TOP,
@@ -58,6 +59,7 @@ export function ExperienceCard({
   dates,
   roleCount,
   activeIndex,
+  mobile = false,
 }: {
   company: string
   role: string
@@ -67,6 +69,10 @@ export function ExperienceCard({
   // on the card and angled to the card's measured right slant (see below).
   roleCount: number
   activeIndex: number
+  // Mobile renders a self-contained card (no left bleed, auto height, full-width
+  // panel, an inline location chip, no indicator) so it sits cleanly in the
+  // stacked column instead of the desktop "bleed off the left screen edge" layout.
+  mobile?: boolean
 }) {
   // Angle the location text to ride along the triangle's bottom-right edge. That
   // edge runs from the top-right corner down to the point at LOCATION_TRI_POINT_X
@@ -120,6 +126,78 @@ export function ExperienceCard({
     observer.observe(card)
     return () => observer.disconnect()
   }, [])
+
+  // MOBILE — a self-contained card: full column width (no left bleed), height that
+  // grows with content (so the role title is never cropped by the clip-path), a
+  // full-width black company panel, the location as a compact horizontal chip
+  // (can't spill), and no vertical indicator (the mobile flow shows a horizontal
+  // pager separately). Keeps the white/black parallelogram + clip-paths identity.
+  if (mobile) {
+    return (
+      <div className="relative w-full">
+        {/* cast shadow */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            transform: 'translate(0.4rem, 0.4rem)',
+            backgroundColor: CARD_SHADOW_FILL,
+            clipPath: CARD_WHITE_CLIP,
+          }}
+        />
+        {/* white card face */}
+        <div
+          className="relative px-5 pt-5 pb-8"
+          style={{ backgroundColor: CARD_PAPER, clipPath: CARD_WHITE_CLIP }}
+        >
+          {/* black company panel — full width */}
+          <div
+            className="flex items-center justify-center px-4 py-3"
+            style={{ backgroundColor: CARD_INK, clipPath: CARD_BLACK_CLIP }}
+          >
+            <p
+              className="text-center font-semibold tracking-wide text-white"
+              style={{ fontSize: 'clamp(1.05rem, 4.4vw, 1.4rem)' }}
+            >
+              {company}
+            </p>
+          </div>
+
+          {/* location chip — horizontal, sized to its own text; pulled up so it
+              touches (merges into) the black company panel above, like a pennant. */}
+          <div style={{ marginTop: '-2px' }}>
+            <span
+              className="inline-block px-3 pt-2 pb-3 font-black tracking-[-0.04em] whitespace-nowrap text-white uppercase"
+              style={{ backgroundColor: CARD_INK, clipPath: LOCATION_MOBILE_CLIP, fontSize: '0.78rem' }}
+            >
+              {location}
+            </span>
+          </div>
+
+          {/* title + date — right-aligned, padded clear of the clipped corner */}
+          <div className="mt-4 flex flex-col items-end" style={{ paddingRight: '10%' }}>
+            <h2
+              className="font-display text-right leading-[0.9] tracking-wide uppercase"
+              style={{
+                color: CARD_INK,
+                fontSize: 'clamp(1.7rem, 7.5vw, 2.6rem)',
+                maxWidth: '100%',
+                transform: `skewX(${CARD_TITLE_SKEW})`,
+              }}
+            >
+              {role}
+            </h2>
+            <p
+              className="text-right leading-tight font-extrabold tracking-tight"
+              style={{ color: CARD_INK, fontSize: 'clamp(0.95rem, 3.8vw, 1.25rem)' }}
+            >
+              {dates}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     // GEOMETRY wrapper — carries the card's footprint (left bleed + height) and
