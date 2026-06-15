@@ -1,5 +1,13 @@
 ## Task 01 — Data Model & Content Source
 
+> ✅ **DONE (structure) — but content is still SCAFFOLD.** The model shipped, adapted to
+> [`redesign.md`](redesign.md): `experience.ts` exports `Role` with `bullets[]` (★ list),
+> `summary`, and `technologies[]` **instead of** the `journal` / `companyBlurb` / `logo`
+> below, and `helpers.ts` has `formatDateRange` / `getRoleBySlug` / `formatIndex`. The
+> `journal` / tarot framing in this doc is superseded. **Remaining:** the `ROLES` entries
+> are flagged `⚠️ SCAFFOLD — VERIFY THIS` — swap in real, Voice-compliant content. Note
+> `summary` and `links` are currently unrendered (decide their fate in Task 03/04).
+
 ### Goal
 
 Define the single source of truth for work-experience data so the rest of the page is

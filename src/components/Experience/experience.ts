@@ -29,7 +29,7 @@ export type Role = {
   slug: string
   company: string // → the info card's black header strip + the identity-panel name
   role: string // experience title → the big black text in the white card panel
-  location: string // → the small angled black tab on the card's left edge
+  location: string // → the small angled black tab on the card's left edge; city only (e.g. "Montreal", not "Montreal, Canada")
   start: string // ISO 'YYYY-MM'
   // `end` omitted ⇒ current role → the date range reads "… — Present" and fills
   // the right side of the white card panel (formatDateRange in helpers.ts).
@@ -53,82 +53,48 @@ export type Role = {
 // these entries to reorder the roster.
 export const ROLES: readonly Role[] = [
   {
-    slug: 'intact',
-    company: 'Intact Financial Corporation',
-    role: 'Software Developer I - Backend',
-    location: 'Montreal',
-    start: '2025-09',
-    end: '2025-12',
-    summary:
-      'A backend co-op shipping production features across Spring Boot microservices for Canada’s largest property & casualty insurer.',
+    slug: "intact-fullstack-2026",
+    company: "Intact Financial Corporation",
+    role: "Software Developer I – Full-Stack",
+    location: "Montreal",
+    start: "2026-05",
+    end: "2026-08",
     bullets: [
-      'Designed and shipped backend features across Spring Boot microservices using Java, Kubernetes, and Kafka.',
-      'Implemented a multilingual logo-selection system across Angular and Thymeleaf services, deployed to production with full test coverage.',
-      'Increased test coverage up to 90% across 3 Spring Boot services using JUnit and Spring Boot Test, reducing the risk of regression in critical flows.',
-      'Resolved critical SOAP and REST API issues, improving reliability and cross-team integrations.',
-      'Led observability efforts by adding service-level metrics and building Dynatrace dashboards for 7 services.',
+      "Investigated and resolved production defects across distributed microservices, collaborating with developers and stakeholders to restore service reliability and minimize business impact.",
+      "Drove an AI-assisted defect analysis initiative to automate root cause identification and reduce mean time to resolution.",
+      "Leveraged experience across the full stack to contribute to both frontend and backend services in a high-throughput production environment.",
     ],
-    technologies: [
-      'Java', 'Spring Boot', 'Kubernetes', 'Kafka', 'Angular', 'Thymeleaf',
-      'JUnit', 'Spring Boot Test', 'SOAP', 'REST API', 'Dynatrace',
-    ],
+    summary: "Full-stack co-op at Intact resolving production defects across distributed microservices and driving AI-assisted root cause analysis.",
+    technologies: ["Java", "Spring Boot", "Kafka", "Angular", "AWS", "JUnit", "TypeScript", "Jira", "Oracle SQL", "MongoDB"],
   },
   {
-    // ⚠️ SCAFFOLD — VERIFY THIS.
-    slug: 'watplan',
-    company: 'WatPlan',
-    role: 'Full-Stack Developer',
-    location: 'Waterloo, ON',
-    start: '2024-01',
-    end: '2024-04',
-    summary:
-      'A degree-planning tool that maps Waterloo course requirements onto a visual term-by-term roadmap.',
+    slug: "intact-backend-2025",
+    company: "Intact Financial Corporation",
+    role: "Software Developer I – Backend",
+    location: "Montreal",
+    start: "2025-09",
+    end: "2025-12",
     bullets: [
-      'Built a course-planning web app that turns a tangle of prerequisites into a clear term-by-term roadmap.',
-      'Modelled the requirement graph and wrote the validator that flags missing prerequisites before a plan is saved.',
-      'Shipped a responsive drag-and-drop board so students can rearrange courses across terms on any device.',
+      "Designed and shipped backend features across Spring Boot microservices using Java, Kubernetes, and Kafka.",
+      "Implemented a multilingual logo-selection system across Angular and Thymeleaf services, deployed to production with full test coverage.",
+      "Increased test coverage up to 90% across 3 Spring Boot services using JUnit and Spring Boot Test, reducing regression risk in critical flows.",
+      "Led observability efforts by adding service-level metrics and building Dynatrace dashboards for 7 services.",
     ],
-    technologies: ['Next.js', 'React', 'TypeScript', 'MongoDB', 'Tailwind CSS'],
-    links: [
-      {
-        label: 'GitHub',
-        href: 'https://example.com/watplan',
-        newTab: true,
-      },
-    ],
+    summary: "Backend co-op at Intact building Spring Boot microservices, driving test coverage to 90%, and establishing Dynatrace observability across 7 services.",
+    technologies: ["Java", "Spring Boot", "Kubernetes", "Kafka", "Angular", "Thymeleaf", "JUnit", "Dynatrace", "HTML", "CSS", "Jenkins", "Postman", "Jira", "Oracle SQL"],
   },
   {
-    // ⚠️ SCAFFOLD — VERIFY THIS.
-    slug: 'mcgill-research',
-    company: 'McGill University',
-    role: 'Chemistry Research Intern',
-    location: 'Montréal, QC',
-    start: '2023-05',
-    end: '2023-08',
-    summary:
-      'A summer research role building data-processing tooling for a computational chemistry lab.',
+    slug: "wea-ai-researcher-2025",
+    company: "Waterloo Experience Accelerate — Local Technologies Inc.",
+    role: "Student AI Researcher",
+    location: "Remote",
+    start: "2025-01",
+    end: "2025-04",
     bullets: [
-      'Wrote Python pipelines that cleaned and aggregated raw spectrometer output for downstream analysis.',
-      'Automated a manual reporting workflow, cutting a recurring multi-hour task to a single command.',
-      'Collaborated with graduate researchers to translate experimental needs into reusable scripts.',
+      "Researched recommendation systems and predictive analytics to identify scalable AI solutions for local businesses.",
+      "Delivered reports translating AI capabilities into actionable product decisions for non-technical stakeholders.",
     ],
-    technologies: ['Python', 'NumPy', 'pandas', 'Matplotlib', 'Git'],
-  },
-  {
-    // ⚠️ SCAFFOLD — VERIFY THIS.
-    slug: 'cineplex',
-    company: 'Cineplex',
-    role: 'Software Developer Intern',
-    location: 'Toronto, ON',
-    start: '2022-09',
-    end: '2022-12',
-    summary:
-      'A backend internship on the services that power ticketing and loyalty across the theatre network.',
-    bullets: [
-      'Implemented and tested REST endpoints for the loyalty service used across the booking flow.',
-      'Added integration tests that caught regressions before release and raised confidence in deploys.',
-      'Paired with senior engineers to ship a caching layer that trimmed response times on hot paths.',
-    ],
-    technologies: ['C#', '.NET', 'SQL Server', 'Azure', 'Git'],
+    summary: "AI research role investigating recommendation systems and predictive analytics, translating findings into product-ready decisions for local businesses.",
+    technologies: ["AI", "Research", "Recommendation Systems", "Predictive Analytics"],
   },
 ] as const

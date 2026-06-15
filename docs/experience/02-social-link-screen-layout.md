@@ -1,5 +1,14 @@
 ## Task 02 — Social Link Screen Layout (static)
 
+> ✅ **DONE — but built to [`redesign.md`](redesign.md), not this doc.** The static layout
+> shipped as a single-role **collage**, not the tarot/roster split described below. Actual
+> components: `SocialLinkScreen` (desktop scale-to-fit stage + `matchMedia` gate + mobile
+> flow), `ExperienceCard` (angled B/W card), `SocialLinkBar` (`NavButton` Prev/Next),
+> `BondPager`, `JobPanels` (★ bullets collage), `TechStack` (draggable tokens). There is
+> **no** `CompanyCard` / tarot card, `BondRoster`/`BondRow`, `StripeField`, or
+> `BackdropShapes` — those were dropped in the redesign. Read this doc for intent only;
+> the code + `redesign.md` are the truth.
+
 ### Goal
 
 Build the static, data-driven Social Link composition: render `ROLES` (Task 01) as the

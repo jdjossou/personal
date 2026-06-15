@@ -167,7 +167,7 @@ export const TITLE_LEFT = '0cqw'
 
 // Prev / Next row. NAV_INSET_X is the side padding that pushes the two controls
 // inward from the row's edges (Prev from the left, Next from the right).
-export const NAV_TOP = '12cqh'
+export const NAV_TOP = '10cqh'
 export const NAV_LEFT = '-2.5cqw'
 export const NAV_WIDTH = '50.5cqw'
 export const NAV_INSET_X = '4.5cqw'

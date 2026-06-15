@@ -1,5 +1,13 @@
 # Experience — Social Link Screen (Design Overview)
 
+> ⚠️ **SUPERSEDED (2026-06-14).** This overview describes the original tarot-card /
+> journal-paragraph / master–detail roster vision. That vision was replaced by
+> [`redesign.md`](redesign.md) (single-role **collage**: EXPERIENCE title, Prev/Next pager,
+> black/white angled `ExperienceCard`, ★ `JobPanels` bullets, `TechStack`, `BondPager`, no
+> tarot card, no journal paragraph). The shipped code follows `redesign.md`. Keep this doc
+> for the P3R-mapping rationale only; for current truth see `redesign.md` and the updated
+> Tasks [`03`](03-selection-detail-and-deep-linking.md) / [`04`](04-transitions-and-polish.md).
+
 This is the north-star doc for the Experience section. It fixes the design and the
 P3R mapping; the four numbered task docs (`01`–`04`) build toward it. The raw brief
 lives in [`goal.md`](goal.md); the visual standard is `experience_reference.png`.

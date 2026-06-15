@@ -1,73 +1,90 @@
 ## Task 04 — Transitions, Navigation & Polish
 
-### Goal
+> **Status (2026-06-14): PARTIALLY DONE.** The hard part of navigation already shipped in
+> [`SocialLinkScreen.tsx`](../../src/components/Experience/SocialLinkScreen.tsx):
+> Back-to-menu is wired (`back()` plays `cancel`, `armTransition({ effect: 'doubleCircle',
+> target: 'menu' })`, `armEnterMenu()`, `router.push('/')`), held in `backRef`, and the
+> window-level `Escape` listener calls it. The collage also already has a robust
+> responsive system (a `matchMedia` desktop/mobile gate + a scale-to-fit stage driven by a
+> `ResizeObserver`) and a mobile flow. **What's left is the entry reveal, the move/confirm
+> sounds, reduced-motion, and the final fidelity pass** — most of which depends on Task 03
+> existing first (no selection = no move/confirm sound).
 
-Wire the Experience page into the site's navigation and game-like feel, then take the
-final fidelity pass: section entry/exit reveal, back-to-menu, UI sound, reduced-motion,
-and a reference-faithful responsive sweep. This is mostly reuse of pieces already proven
-in `Education/StatScreen.tsx` — `ScreenReveal`, the `handoff` arming pattern, and the
-`MainMenu` audio — plus the screenshot-iteration polish loop.
+> **Design note:** the page follows [`redesign.md`](redesign.md), not the original
+> tarot/journal brief in `00`–`02`. References below to `StatScreen` patterns still apply;
+> references to tarot cards / journals do not.
 
 ---
 
-### Section Entry / Exit (reuse, don't rebuild)
+### Section Entry / Exit — REMAINING
 
 - The page is opened from the menu's `EXPERIENCE` route (`MENU_ROUTES[2]` →
-  `/experience`). Wrap `SocialLinkScreen`'s root in `<ScreenReveal reveals="section">`,
-  exactly as `StatScreen` does, so it plays the same section reveal as the other
-  sections (replacing the `SectionPlaceholder` handoff, not discarding it).
-- **Back to menu** returns to the **main menu** (not the landing screen): on Back, play
-  the `cancel` sound, `armTransition({ effect: 'doubleCircle', origin, target: 'menu' })`,
-  `armEnterMenu()`, then `router.push('/')` — copy `StatScreen.back()` verbatim, held in
-  a ref so the window `Escape` listener always calls the latest closure.
-- `Escape` triggers back-to-menu, consistent with the rest of the site (window-level
-  listener; the listbox keeps arrows/Enter scoped to itself so they never conflict).
+  `/experience`). **Wrap `SocialLinkScreen`'s root in `<ScreenReveal reveals="section">`**,
+  exactly as `StatScreen` does (`src/components/Education/StatScreen.tsx`), so it plays the
+  same section reveal as the other sections. The root `<main>` is currently unwrapped.
+- Confirm the wrap composes with the existing scale-to-fit stage and the desktop/mobile
+  gate without double-animating or fighting the `transform: scale(...)` on the stage.
+- **Back to menu — DONE.** `back()` + `backRef` + the `Escape` listener already match
+  `StatScreen.back()`. Leave as-is; just verify it still fires correctly once `ScreenReveal`
+  wraps the tree.
 
 ---
 
-### Sound
+### Sound — PARTIALLY DONE
 
-Reuse the `MainMenu/audio` SFX, matching `StatScreen`'s wiring and the global
-mute / muted-by-default policy:
-
-- `initAudioOnGesture()` on mount.
-- `move` on a real selection change (never re-fires on the active row, never double-fires
-  with keyboard `moveTo`).
-- `confirm` on Enter/Space, `cancel` on Back/Escape.
-- The pure URL/selection writer stays **sound-free** so popstate / deep-link callers
-  don't fire SFX — keep the SFX at the user-input sites (the discipline `StatScreen`
+- `cancel` on Back/Escape — **DONE** (`playSound('cancel')` in `back()`).
+- **REMAINING:** call `initAudioOnGesture()` on mount (as `StatScreen` does) so the first
+  interaction unlocks audio.
+- **REMAINING (needs Task 03):** `move` on a real selection change (Prev/Next/arrow paging)
+  — never re-fire on a no-op, never double-fire with keyboard paging. Optional `confirm`
+  if you add an explicit confirm key.
+- Keep the pure URL/selection writer **sound-free** so `popstate` / cold deep-link callers
+  don't fire SFX — fire SFX only at the user-input sites (the discipline `StatScreen`
   documents).
 
 ---
 
-### Accessibility & Reduced Motion
+### Accessibility & Reduced Motion — REMAINING
 
-- Respect `prefers-reduced-motion` for the entry/exit reveal and any card/stripe motion
-  — simpler / instant variants.
-- Full keyboard operability end-to-end: roster nav (Task 03), bumper paging, back-to-menu.
-- Visible focus states throughout.
+- Respect `prefers-reduced-motion` for: the `ScreenReveal` entry, the `TechStack`
+  floating/draggable token motion, the `JobPanels` scatter, and any title/card motion —
+  provide simpler/instant variants.
+- Full keyboard operability end-to-end: Prev/Next + arrow paging (Task 03), Back-to-menu
+  (done). Visible focus states on `NavButton`s and any links.
 
 ---
 
-### Final Responsive & Visual Pass
+### Final Responsive & Visual Pass — REMAINING
 
-- Verify the Social Link layout holds mobile → wide desktop: roster stays a list, the
-  journal stays readable, the tarot company card scales without overflowing, the
-  company name/bio and rank stay legible.
-- Confirm it never reads as a light background and still obeys **no generic rounded
-  cards** after all polish — and that it reads as its *own* screen, not a recoloured
-  Projects/Education clone (the tarot card + stripe field carry that distinction).
-- Iterate against `experience_reference.png` via headless screenshots (the established
-  visual-iteration workflow) until the composition, palette, and the journal/card
-  hierarchy match.
+The scaffolding is solid (gate + scale-to-fit stage + mobile flow already handle grow/shrink
+without a refresh). The remaining work is fidelity + content, not plumbing:
+
+- **Content:** `experience.ts` is still flagged `⚠️ SCAFFOLD — VERIFY THIS`. Replace the
+  placeholder dates/bullets/tech/summaries with the **real** experience before shipping; the
+  `bullets` must obey the **Voice** rule ("Built X, which did Y", never "responsible for X").
+- Decide the fate of the unrendered `summary` and `links` fields (see Task 03) so no dead
+  data ships.
+- Verify the collage holds mobile → wide desktop: the `ExperienceCard` stays legible, the
+  `JobPanels` ★ bullets stay readable, the `TechStack` tokens don't overflow the stage, and
+  the title crop reads as intentional (not clipped content).
+- Confirm it never reads as a light background and obeys **no generic rounded cards**, and
+  that it reads as its *own* screen (the EXPERIENCE title crop + card shape language +
+  scattered comic frames + draggable tech tokens carry that distinction), not a recoloured
+  Projects/Education clone.
+- Iterate against `experience_reference.png` / the `redesign.md` intent via the established
+  headless-screenshot workflow until composition, palette, and hierarchy match.
 
 ---
 
 ### What This Task Produces
 
-- Experience page mounted on the menu's `EXPERIENCE` route with the shared section entry
-  reveal and a working Back-to-menu (mouse + `Escape`) to the main menu.
-- `MainMenu` UI sounds on move / confirm / cancel, honouring global mute.
-- Reduced-motion fallbacks and full keyboard operability.
-- A final responsive + reference-faithful visual pass; the page feels like a Persona
-  Social Link screen and is ready to ship.
+- The shared section entry reveal (`ScreenReveal`) on the Experience collage. *(Back-to-menu
+  + Escape already done.)*
+- `initAudioOnGesture()` on mount and `move` SFX on real paging (confirm optional),
+  honouring global mute. *(cancel already done.)*
+- Reduced-motion fallbacks across the reveal, tech tokens, and job-panel scatter; full
+  keyboard operability with visible focus.
+- Real content in `experience.ts` (Voice-compliant) and a resolved decision on the dead
+  `summary` / `links` fields.
+- A final responsive + reference-faithful visual pass; the page feels like a Persona Social
+  Link collage and is ready to ship.
