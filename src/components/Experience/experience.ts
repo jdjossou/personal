@@ -11,17 +11,10 @@
 //
 // **Voice:** `bullets` are resume-style accomplishment lines (the ★ list on the
 // left), first person, past/present tense, outcome-oriented — "Built X, which
-// did Y." `summary` is the one-sentence "what this experience is" shown in the
-// bottom-right identity panel — shorter and more descriptive than the bullets.
+// did Y."
 //   Bad bullet:  "Responsible for the billing service."
 //   Good bullet: "Rebuilt the billing service around idempotent webhooks, which
 //                 cut failed renewals ~30%."
-
-export type RoleLink = {
-  label: string // "GitHub", "Case study", "Demo", "Writeup"…
-  href: string
-  newTab?: boolean // open in a new tab (external links)
-}
 
 export type Role = {
   // `slug` is the contract with selection + the deep link (`/experience/<slug>`).
@@ -36,11 +29,8 @@ export type Role = {
   end?: string
   // The ★ resume bullets — the left-side job description. See **Voice:** above.
   bullets: readonly string[]
-  // The one-sentence summary shown in the bottom-right identity panel. See **Voice:**.
-  summary: string
   // The technologies used — rendered as small angular tags in the identity panel.
   technologies: readonly string[]
-  links?: readonly RoleLink[] // optional
 }
 
 // ⚠️ SCAFFOLD — VERIFY THIS. These entries use the company names called out in
@@ -64,7 +54,6 @@ export const ROLES: readonly Role[] = [
       "Drove an AI-assisted defect analysis initiative to automate root cause identification and reduce mean time to resolution.",
       "Leveraged experience across the full stack to contribute to both frontend and backend services in a high-throughput production environment.",
     ],
-    summary: "Full-stack co-op at Intact resolving production defects across distributed microservices and driving AI-assisted root cause analysis.",
     technologies: ["Java", "Spring Boot", "Kafka", "Angular", "AWS", "JUnit", "TypeScript", "Jira", "Oracle SQL", "MongoDB"],
   },
   {
@@ -80,12 +69,11 @@ export const ROLES: readonly Role[] = [
       "Increased test coverage up to 90% across 3 Spring Boot services using JUnit and Spring Boot Test, reducing regression risk in critical flows.",
       "Led observability efforts by adding service-level metrics and building Dynatrace dashboards for 7 services.",
     ],
-    summary: "Backend co-op at Intact building Spring Boot microservices, driving test coverage to 90%, and establishing Dynatrace observability across 7 services.",
     technologies: ["Java", "Spring Boot", "Kubernetes", "Kafka", "Angular", "Thymeleaf", "JUnit", "Dynatrace", "HTML", "CSS", "Jenkins", "Postman", "Jira", "Oracle SQL"],
   },
   {
-    slug: "wea-ai-researcher-2025",
-    company: "Waterloo Experience Accelerate — Local Technologies Inc.",
+    slug: "li-ai-researcher-2025",
+    company: "Local Technologies Inc.",
     role: "Student AI Researcher",
     location: "Remote",
     start: "2025-01",
@@ -94,7 +82,6 @@ export const ROLES: readonly Role[] = [
       "Researched recommendation systems and predictive analytics to identify scalable AI solutions for local businesses.",
       "Delivered reports translating AI capabilities into actionable product decisions for non-technical stakeholders.",
     ],
-    summary: "AI research role investigating recommendation systems and predictive analytics, translating findings into product-ready decisions for local businesses.",
     technologies: ["AI", "Research", "Recommendation Systems", "Predictive Analytics"],
   },
 ] as const

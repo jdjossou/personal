@@ -18,11 +18,13 @@
 //     the RIGHT side, top→bottom
 //   • "Back to menu" alone, bottom-right
 //
-// VISUAL-ONLY pass: the most-recent role is preselected; Previous / Next and Back
-// are styled but inert (the handlers are no-ops).
+// Selection (Task 03): one role on screen at a time, keyed by slug. Previous /
+// Next + arrow keys / Home / End page the whole collage (with wrap), and every
+// role has a shareable `/experience/<slug>` deep link driven by the History API
+// (shallow pushState — no remount / replayed reveal). Back returns to the menu.
 
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 
 import { ExperienceCard } from './ExperienceCard'
 import { NavButton } from './SocialLinkBar'
@@ -64,7 +66,7 @@ import {
   TITLE_TOP,
   TITLE_TRACKING,
 } from './constants'
-import { formatDateRange } from './helpers'
+import { formatDateRange, getRoleBySlug } from './helpers'
 import { ROLES } from './experience'
 import {
   armEnterMenu,
@@ -74,12 +76,85 @@ import {
 } from '@/components/Transitions/handoff'
 import { playSound } from '@/components/MainMenu/audio'
 
+// --- Deep-link URL helpers (ported from Education/StatScreen). ---
+const BASE = '/experience'
+
+// The default selection — the most recent role. ROLES is authored newest-first,
+// so this is simply ROLES[0]. Stable, so the bare-base URL maps to exactly one
+// role regardless of authoring order.
+const DEFAULT_ROLE = ROLES[0]
+
+// The slug encoded in a path, or null for the bare base (default selection).
+function slugFromPath(pathname: string): string | null {
+  if (!pathname.startsWith(`${BASE}/`)) return null
+  const rest = pathname.slice(BASE.length + 1)
+  return rest ? decodeURIComponent(rest) : null
+}
+
+// Canonical path for an active slug — the default role maps to the bare base, so
+// there is exactly one URL per state and `/experience` always shows the default.
+function pathForSlug(slug: string): string {
+  return slug === DEFAULT_ROLE.slug ? BASE : `${BASE}/${encodeURIComponent(slug)}`
+}
+
+// Resolve a path to a valid active slug. `explicit` = a real role slug was in the
+// URL (cold deep link / back-forward). `unknown` = a slug was present but matched
+// nothing (degrade to default + clean the URL).
+function resolveActive(pathname: string): {
+  slug: string
+  explicit: boolean
+  unknown: boolean
+} {
+  const raw = slugFromPath(pathname)
+  if (!raw) return { slug: DEFAULT_ROLE.slug, explicit: false, unknown: false }
+  if (getRoleBySlug(raw)) return { slug: raw, explicit: true, unknown: false }
+  return { slug: DEFAULT_ROLE.slug, explicit: false, unknown: true }
+}
+
 export function SocialLinkScreen() {
-  // Static preselection — the most recent role (ROLES is authored newest-first).
-  const activeIndex = 0
+  // Selection keyed by slug (not index) so reordering ROLES never moves a link and
+  // the URL can drive selection. Seeded from usePathname() in the initializer so a
+  // cold /experience/<slug> (or the bare base) renders the right role on the first
+  // paint — no flash of the default. usePathname returns the real path during SSR.
+  const pathname = usePathname()
+  const [activeSlug, setActiveSlug] = useState<string>(
+    () => resolveActive(pathname).slug,
+  )
+  // Derive the index the presentational components (ExperienceCard, BondPager)
+  // still take; fall back to 0 if the slug somehow isn't found.
+  const activeIndex = Math.max(0, ROLES.findIndex((r) => r.slug === activeSlug))
   const role = ROLES[activeIndex]
   const dates = formatDateRange(role.start, role.end)
-  const noop = () => {}
+
+  // The one place selection happens. Updates state immediately (the whole collage
+  // swaps this tick) and mirrors the slug into the URL with the native History API
+  // — pushState keeps it shallow (no Next navigation / remount / replayed
+  // ScreenReveal) while still adding a back/forward entry. Sound-free, so the
+  // popstate / cold-deep-link callers don't fire SFX.
+  function selectSlug(slug: string) {
+    setActiveSlug(slug)
+    const next = pathForSlug(slug)
+    if (next !== window.location.pathname) {
+      window.history.pushState(null, '', next)
+    }
+  }
+  // Page by ±1 with wrap (prev on the first role → last, next on the last → first).
+  function step(delta: number) {
+    const n = ROLES.length
+    const i = (activeIndex + delta + n) % n
+    selectSlug(ROLES[i].slug)
+  }
+  // Jump to an absolute index (Home / End).
+  function moveTo(i: number) {
+    selectSlug(ROLES[i].slug)
+  }
+  // Held in a ref so the window-level keyboard listener (bound once) always calls
+  // the latest closure — capturing activeIndex directly would page from a stale
+  // index. Same pattern as backRef below.
+  const pagerRef = useRef({ step, moveTo })
+  useEffect(() => {
+    pagerRef.current = { step, moveTo }
+  })
 
   // Back to the MAIN MENU — same handoff as the rest of the site (StatScreen /
   // QuestList): play the cancel sound, arm the double-circle reveal the menu will
@@ -96,15 +171,59 @@ export function SocialLinkScreen() {
   useEffect(() => {
     backRef.current = back
   })
+  // Window-level keys: Escape backs to the menu (unchanged); arrows page the
+  // pager with wrap; Home/End jump to first/last. All preventDefault so they don't
+  // also scroll. Paging goes through pagerRef so it never uses a stale index.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        backRef.current(centerOrigin())
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault()
+          backRef.current(centerOrigin())
+          break
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault()
+          pagerRef.current.step(-1)
+          break
+        case 'ArrowRight':
+        case 'ArrowDown':
+          e.preventDefault()
+          pagerRef.current.step(1)
+          break
+        case 'Home':
+          e.preventDefault()
+          pagerRef.current.moveTo(0)
+          break
+        case 'End':
+          e.preventDefault()
+          pagerRef.current.moveTo(ROLES.length - 1)
+          break
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // Cold deep link (mount): the slug is already seeded in state above, so this
+  // only normalizes a removed/unknown slug back to the bare base via replaceState
+  // — a portfolio shouldn't hard-404 a role that was taken down.
+  useEffect(() => {
+    const { unknown } = resolveActive(window.location.pathname)
+    if (unknown) window.history.replaceState(null, '', BASE)
+  }, [])
+
+  // Sync selection from the URL on browser back/forward — the one URL change we
+  // don't originate (popstate never fires on our own pushState, so no echo). The
+  // page stays mounted, so this just re-points selection.
+  useEffect(() => {
+    function onPopState() {
+      const { slug, unknown } = resolveActive(window.location.pathname)
+      setActiveSlug(slug)
+      if (unknown) window.history.replaceState(null, '', BASE)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
   // Responsive gate — desktop collage vs mobile stacked flow. Driven by a live
@@ -163,6 +282,10 @@ export function SocialLinkScreen() {
     >
       {/* No darkening veil — the animated blue water shows through clean; each
           element carries its own shadow/outline for legibility. */}
+
+      {/* Announce the active role to screen readers when the collage swaps — the
+          selection change is otherwise purely visual. */}
+      <div aria-live="polite" className="sr-only">{`${role.role} — ${role.company}`}</div>
 
       {/* ===== DESKTOP — scale-to-fit canvas (proportions locked). Shown only when the
           .exp gate above matches (≥DESKTOP_MIN_WIDTH AND aspect ≥ the ratio). The stage
@@ -227,13 +350,16 @@ export function SocialLinkScreen() {
           className="absolute z-30 flex items-center justify-between"
           style={{ top: NAV_TOP, left: NAV_LEFT, width: NAV_WIDTH, paddingLeft: NAV_INSET_X, paddingRight: NAV_INSET_X }}
         >
-          <NavButton dir="prev" onClick={noop} />
-          <NavButton dir="next" onClick={noop} />
+          <NavButton dir="prev" onClick={() => step(-1)} />
+          <NavButton dir="next" onClick={() => step(1)} />
         </div>
 
         {/* TECH STACK title + floating draggable tech tokens — zone below the card,
             on the left. (Renders its own absolute title + stage-spanning layer.) */}
-        <TechStack technologies={role.technologies} scaleRef={scaleRef} />
+        {/* key={activeSlug} remounts TechStack per role so its per-token drag
+            offsets + angular-spring physics reset cleanly — a new role's tokens
+            never inherit the previous role's scattered layout. */}
+        <TechStack key={activeSlug} technologies={role.technologies} scaleRef={scaleRef} />
 
         {/* ★ Job HIGHLIGHTS — the scattered comic-frame collage filling the right
             side and flowing into the freed bottom-right space (logo removed). */}
@@ -272,8 +398,8 @@ export function SocialLinkScreen() {
           {SECTION_TITLE}
         </h1>
         <div className="flex items-center justify-between">
-          <NavButton dir="prev" onClick={noop} />
-          <NavButton dir="next" onClick={noop} />
+          <NavButton dir="prev" onClick={() => step(-1)} />
+          <NavButton dir="next" onClick={() => step(1)} />
         </div>
         <ExperienceCard
           company={role.company}

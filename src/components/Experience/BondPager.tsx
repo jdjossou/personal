@@ -28,9 +28,9 @@ export function BondPager({
       className={`flex items-center ${orientation === 'vertical' ? 'flex-col' : ''}`}
       style={{ gap: PAGER_GAP }}
       role="group"
-      aria-label="Bond pager"
+      aria-label={`Experience ${activeIndex + 1} of ${count}`}
     >
-      <span className="sr-only">{`Bond ${activeIndex + 1} of ${count}`}</span>
+      <span className="sr-only">{`Experience ${activeIndex + 1} of ${count}`}</span>
       {Array.from({ length: count }).map((_, i) => {
         const active = i === activeIndex
         return (
