@@ -97,6 +97,23 @@ body {
   }
 }
 
+/* Experience Prev/Next navigate feedback (Task 04). A brief one-shot scale "bump"
+   replayed on each navigation (click OR keyboard) alongside the arrow's orange
+   highlight flash — the button is keyed by a pulse nonce so the keyframe restarts
+   even when re-paging the same direction. Gated in JS: NavButton skips this
+   animation entirely under reduced motion (the colour flash still fires). */
+@keyframes nav-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* Education "Academic Status" slash field (SlashField.tsx). A slow lateral
    drift of the diagonal blue brush-slashes — the P3R "Check Status" shimmer. The
    rotate is carried here too so it overrides the element's static (reduced-

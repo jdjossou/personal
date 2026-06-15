@@ -74,7 +74,8 @@ import {
   centerOrigin,
   type Origin,
 } from '@/components/Transitions/handoff'
-import { playSound } from '@/components/MainMenu/audio'
+import { ScreenReveal } from '@/components/Transitions/ScreenReveal'
+import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
 
 // --- Deep-link URL helpers (ported from Education/StatScreen). ---
 const BASE = '/experience'
@@ -138,14 +139,30 @@ export function SocialLinkScreen() {
       window.history.pushState(null, '', next)
     }
   }
+  // Navigate feedback: a nonce the matching Prev/Next button watches to flash its
+  // highlight + bump. Bumped at the user-input paging sites below (step / moveTo)
+  // so it fires for clicks AND keyboard — never from selectSlug (kept sound/effect
+  // -free so popstate / cold-deep-link callers stay silent). The `move` SFX rides
+  // alongside it at the same sites, also never re-firing on a no-op.
+  const [navPulse, setNavPulse] =
+    useState<{ dir: 'prev' | 'next'; nonce: number }>()
+  function pulse(dir: 'prev' | 'next') {
+    playSound('move')
+    setNavPulse((p) => ({ dir, nonce: (p?.nonce ?? 0) + 1 }))
+  }
   // Page by ±1 with wrap (prev on the first role → last, next on the last → first).
+  // Always changes the selection (wrap), so it always pulses + plays `move`.
   function step(delta: number) {
     const n = ROLES.length
     const i = (activeIndex + delta + n) % n
+    pulse(delta < 0 ? 'prev' : 'next')
     selectSlug(ROLES[i].slug)
   }
-  // Jump to an absolute index (Home / End).
+  // Jump to an absolute index (Home / End). No-op guard so landing on the role
+  // already shown stays silent (no SFX, no pulse, no redundant pushState).
   function moveTo(i: number) {
+    if (i === activeIndex) return
+    pulse(i < activeIndex ? 'prev' : 'next')
     selectSlug(ROLES[i].slug)
   }
   // Held in a ref so the window-level keyboard listener (bound once) always calls
@@ -203,6 +220,12 @@ export function SocialLinkScreen() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // Unlock the Web Audio context on the first interaction (same as StatScreen) so
+  // the move/cancel SFX can play — browsers gate audio until a user gesture.
+  useEffect(() => {
+    initAudioOnGesture()
   }, [])
 
   // Cold deep link (mount): the slug is already seeded in state above, so this
@@ -275,7 +298,14 @@ export function SocialLinkScreen() {
     }
   }, [])
 
+  // The slug-matched pulse nonce for each control — only the button whose
+  // direction was just navigated gets a fresh nonce (the other stays undefined,
+  // so it never flashes).
+  const prevPulse = navPulse?.dir === 'prev' ? navPulse.nonce : undefined
+  const nextPulse = navPulse?.dir === 'next' ? navPulse.nonce : undefined
+
   return (
+    <ScreenReveal reveals="section">
     <main
       className="exp-main fixed inset-0 z-0 bg-transparent select-none"
       style={{ overflowX: 'hidden', overflowY: isDesktop ? 'hidden' : 'auto' }}
@@ -350,8 +380,8 @@ export function SocialLinkScreen() {
           className="absolute z-30 flex items-center justify-between"
           style={{ top: NAV_TOP, left: NAV_LEFT, width: NAV_WIDTH, paddingLeft: NAV_INSET_X, paddingRight: NAV_INSET_X }}
         >
-          <NavButton dir="prev" onClick={() => step(-1)} />
-          <NavButton dir="next" onClick={() => step(1)} />
+          <NavButton dir="prev" onClick={() => step(-1)} pulse={prevPulse} />
+          <NavButton dir="next" onClick={() => step(1)} pulse={nextPulse} />
         </div>
 
         {/* TECH STACK title + floating draggable tech tokens — zone below the card,
@@ -398,8 +428,8 @@ export function SocialLinkScreen() {
           {SECTION_TITLE}
         </h1>
         <div className="flex items-center justify-between">
-          <NavButton dir="prev" onClick={() => step(-1)} />
-          <NavButton dir="next" onClick={() => step(1)} />
+          <NavButton dir="prev" onClick={() => step(-1)} pulse={prevPulse} />
+          <NavButton dir="next" onClick={() => step(1)} pulse={nextPulse} />
         </div>
         <ExperienceCard
           company={role.company}
@@ -454,5 +484,6 @@ export function SocialLinkScreen() {
         </div>
       </div>
     </main>
+    </ScreenReveal>
   )
 }

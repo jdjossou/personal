@@ -54,6 +54,7 @@ import {
   TECHZONE_TOP,
   TECHZONE_WIDTH,
 } from './constants'
+import { useReducedMotion } from './useReducedMotion'
 
 type Pos = { x: number; y: number }
 
@@ -74,6 +75,10 @@ export function TechStack({
   // tracks the cursor 1:1 regardless of how small the canvas is scaled.
   scaleRef?: RefObject<number>
 }) {
+  // Reduced motion: hold the tokens still — no ambient float, no rAF spring loop.
+  // They keep their scattered home positions and stay draggable (just no spin).
+  const reduced = useReducedMotion()
+
   const n = technologies.length
   // Loose grid for the home scatter.
   const cols = Math.max(1, Math.ceil(Math.sqrt(n)))
@@ -103,6 +108,7 @@ export function TechStack({
   const nodeRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
+    if (reduced) return // no spring loop under reduced motion — tokens stay upright
     let raf = 0
     let last = performance.now()
     const tick = (now: number) => {
@@ -123,7 +129,7 @@ export function TechStack({
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [])
+  }, [reduced])
 
   const onPointerDown = (i: number) => (e: ReactPointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -223,7 +229,9 @@ export function TechStack({
                   className="relative block"
                   style={
                     {
-                      animation: `techFloat ${dur}s ease-in-out ${delay}s infinite`,
+                      animation: reduced
+                        ? undefined
+                        : `techFloat ${dur}s ease-in-out ${delay}s infinite`,
                       '--ax': ax,
                       '--ay': ay,
                       '--rot': rot,

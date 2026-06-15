@@ -45,6 +45,8 @@ export const NAV_ARROW_HOVER = '#FF8A00' // arrow color when its label is hovere
 export const NAV_ARROW_OUTLINE_WIDTH = '1.5px' // thickness of the black outline traced around the arrow
 export const NAV_ARROW_OUTLINE_COLOR = '#000000' // color of the arrow outline
 export const NAV_GAP = '0.625rem' // space between arrow and label
+export const NAV_PULSE_MS = 450 // how long a navigated arrow holds its orange highlight
+export const NAV_BUMP_MS = 200 // duration of the one-shot scale bump on navigate (motion only)
 
 // Bond pager pips (bottom-left selector).
 export const PAGER_PIP_ACTIVE = '0.6rem' // the filled, selected pip
