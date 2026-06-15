@@ -1,11 +1,10 @@
-import { SocialLinkScreen } from '@/components/Experience/SocialLinkScreen'
+import { ExperienceList } from '@/components/Experience/ExperienceList'
 
-// The EXPERIENCE route renders the redesigned P3R "Social Link" collage
-// (docs/experience/redesign.md): a huge cropped EXPERIENCE title, the active
-// role's black/white angled info card + ★ job bullets, a large company icon, and
-// a navy identity panel (name / summary / tech), over the diagonal blue stripe
-// field and the shared animated P3R background. Visual-only for now: the first
-// role is preselected and the nav/back controls are styled but inert.
+// The EXPERIENCE route is now the LIST screen (menu → list → detail): a P3R
+// "Social Link LIST" of every role over the shared animated water. Picking a
+// card opens that role's detail collage at `/experience/<slug>` (SocialLinkScreen,
+// rendered by the [slug] route). The bare `/experience` no longer renders a role
+// directly — the detail lives exclusively under `/experience/<slug>`.
 export default function ExperiencePage() {
-  return <SocialLinkScreen />
+  return <ExperienceList />
 }

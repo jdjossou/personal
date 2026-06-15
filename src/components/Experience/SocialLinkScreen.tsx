@@ -21,7 +21,10 @@
 // Selection (Task 03): one role on screen at a time, keyed by slug. Previous /
 // Next + arrow keys / Home / End page the whole collage (with wrap), and every
 // role has a shareable `/experience/<slug>` deep link driven by the History API
-// (shallow pushState — no remount / replayed reveal). Back returns to the menu.
+// (shallow pushState — no remount / replayed reveal). Back returns to the LIST
+// screen (/experience), which in turn backs to the menu (menu → list → detail).
+// The detail lives ONLY under `/experience/<slug>`; the bare `/experience` is the
+// list, so every role — including the default — maps to its own slug URL.
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -69,7 +72,6 @@ import {
 import { formatDateRange, getRoleBySlug } from './helpers'
 import { ROLES } from './experience'
 import {
-  armEnterMenu,
   armTransition,
   centerOrigin,
   type Origin,
@@ -81,26 +83,27 @@ import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
 const BASE = '/experience'
 
 // The default selection — the most recent role. ROLES is authored newest-first,
-// so this is simply ROLES[0]. Stable, so the bare-base URL maps to exactly one
+// so this is simply ROLES[0]. Stable, so an unknown/removed slug degrades to one
 // role regardless of authoring order.
 const DEFAULT_ROLE = ROLES[0]
 
-// The slug encoded in a path, or null for the bare base (default selection).
+// The slug encoded in a path, or null for the bare base (which is now the LIST
+// screen, not a role — see resolveActive).
 function slugFromPath(pathname: string): string | null {
   if (!pathname.startsWith(`${BASE}/`)) return null
   const rest = pathname.slice(BASE.length + 1)
   return rest ? decodeURIComponent(rest) : null
 }
 
-// Canonical path for an active slug — the default role maps to the bare base, so
-// there is exactly one URL per state and `/experience` always shows the default.
+// Canonical path for an active slug — ALWAYS `/experience/<slug>` (the bare base
+// is the list now, so even the default role keeps its own slug URL; no collision).
 function pathForSlug(slug: string): string {
-  return slug === DEFAULT_ROLE.slug ? BASE : `${BASE}/${encodeURIComponent(slug)}`
+  return `${BASE}/${encodeURIComponent(slug)}`
 }
 
 // Resolve a path to a valid active slug. `explicit` = a real role slug was in the
 // URL (cold deep link / back-forward). `unknown` = a slug was present but matched
-// nothing (degrade to default + clean the URL).
+// nothing (degrade to the default role + clean the URL to its slug).
 function resolveActive(pathname: string): {
   slug: string
   explicit: boolean
@@ -173,16 +176,17 @@ export function SocialLinkScreen() {
     pagerRef.current = { step, moveTo }
   })
 
-  // Back to the MAIN MENU — same handoff as the rest of the site (StatScreen /
-  // QuestList): play the cancel sound, arm the double-circle reveal the menu will
-  // play, flag page.tsx to open on the menu, then navigate to '/'. Held in a ref
-  // so the window-level Escape listener always calls the latest closure.
+  // Back to the LIST screen (/experience), NOT the menu — the detail is one level
+  // below the list now (menu → list → detail). Play the cancel sound and arm the
+  // double-circle reveal the list's ScreenReveal (reveals="section") will play,
+  // then navigate. No armEnterMenu — that's only for returning to the menu (the
+  // list itself backs to the menu). Held in a ref so the window-level Escape
+  // listener always calls the latest closure.
   const router = useRouter()
   function back(origin: Origin) {
     playSound('cancel')
-    armTransition({ effect: 'doubleCircle', origin, target: 'menu' })
-    armEnterMenu()
-    router.push('/')
+    armTransition({ effect: 'doubleCircle', origin, target: 'section' })
+    router.push(BASE)
   }
   const backRef = useRef(back)
   useEffect(() => {
@@ -229,11 +233,12 @@ export function SocialLinkScreen() {
   }, [])
 
   // Cold deep link (mount): the slug is already seeded in state above, so this
-  // only normalizes a removed/unknown slug back to the bare base via replaceState
-  // — a portfolio shouldn't hard-404 a role that was taken down.
+  // only normalizes a removed/unknown slug to the DEFAULT role's slug URL via
+  // replaceState — a portfolio shouldn't hard-404 a role that was taken down, and
+  // the bare `/experience` is the list now, so we clean to a real role path.
   useEffect(() => {
     const { unknown } = resolveActive(window.location.pathname)
-    if (unknown) window.history.replaceState(null, '', BASE)
+    if (unknown) window.history.replaceState(null, '', pathForSlug(DEFAULT_ROLE.slug))
   }, [])
 
   // Sync selection from the URL on browser back/forward — the one URL change we
@@ -243,7 +248,7 @@ export function SocialLinkScreen() {
     function onPopState() {
       const { slug, unknown } = resolveActive(window.location.pathname)
       setActiveSlug(slug)
-      if (unknown) window.history.replaceState(null, '', BASE)
+      if (unknown) window.history.replaceState(null, '', pathForSlug(DEFAULT_ROLE.slug))
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
@@ -404,14 +409,15 @@ export function SocialLinkScreen() {
 
         {/* Back — the true bottom-right corner of the SCREEN. Lives OUTSIDE the
             scaled stage (viewport-anchored via BACK_BOTTOM/BACK_RIGHT in vh/vw) so it
-            always hugs the real corner at every aspect/scale. Wired to the handoff. */}
+            always hugs the real corner at every aspect/scale. Wired to the handoff —
+            returns to the LIST (one level up), not the menu. */}
         <div className="absolute z-30" style={{ bottom: BACK_BOTTOM, right: BACK_RIGHT }}>
           <button
             type="button"
             onClick={() => back(centerOrigin())}
             className="font-mono text-xs tracking-[0.3em] text-white/60 uppercase transition-colors hover:text-white focus-visible:text-white focus-visible:outline-none"
           >
-            ← Back to menu
+            ← Back to list
           </button>
         </div>
       </div>
@@ -479,7 +485,7 @@ export function SocialLinkScreen() {
             onClick={() => back(centerOrigin())}
             className="font-mono text-xs tracking-[0.3em] text-white/60 uppercase"
           >
-            ← Back to menu
+            ← Back to list
           </button>
         </div>
       </div>

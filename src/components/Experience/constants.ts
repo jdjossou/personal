@@ -331,3 +331,4 @@ export const LOCATION_MOBILE_CLIP =
 // bullet chips. Reused for each draggable technology token (change 4).
 export const TECH_TOKEN_CLIP =
   'polygon(0.6rem 0, 100% 0, calc(100% - 0.6rem) 100%, 0 100%)'
+

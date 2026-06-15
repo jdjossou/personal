@@ -23,6 +23,13 @@ const toMonthYear = (iso: string): string => {
 export const formatDateRange = (start: string, end?: string): string =>
   `${toMonthYear(start)} – ${end ? toMonthYear(end) : 'Present'}`
 
+// Same span split into its two ends for the LIST card, which stacks the start
+// over the end (mirroring the reference's RANK-over-number block) instead of
+// running them on one line. Returns `[start, end]`; a current role's end reads
+// `Present`.
+export const formatDateParts = (start: string, end?: string): [string, string] =>
+  [toMonthYear(start), end ? toMonthYear(end) : 'Present']
+
 // Resolve a role from its stable `slug` — used by the deep-link resolver (Task
 // 03) to open a role directly from `/experience/<slug>`. Returns undefined for an
 // unknown slug so callers can fall back to the default selection. Mirrors
