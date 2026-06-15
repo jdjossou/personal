@@ -243,7 +243,7 @@ export function ExperienceCard({
 
       {/* WHITE parallelogram — the card face. */}
       <div
-        className="relative h-full pt-6 pr-10 pb-12 pl-[6vw] md:pl-[7vw]"
+        className="relative h-full pt-6 pr-10 pb-12 pl-[7cqw]"
         style={{
           backgroundColor: CARD_PAPER,
           clipPath: CARD_WHITE_CLIP,

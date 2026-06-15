@@ -5,14 +5,15 @@
 // experience.ts and formatting/lookup in helpers.ts. Kept React/DOM-free so the
 // components stay logic-free, same split as Education/constants.ts and Projects/constants.ts.
 //
-// DESKTOP IS A SCALE-TO-FIT CANVAS. The desktop collage is rendered inside a
+// DESKTOP IS A FILL-WIDTH CANVAS. The desktop collage is rendered inside a
 // fixed-size STAGE (STAGE_REF_W × STAGE_REF_H, see below) that declares
-// `container-type: size` and is then `transform: scale()`d as one unit to fit the
-// window — so the whole composition keeps its exact proportions at every width and
-// can never overlap or clip. For that to hold, every desktop position/size below is
-// expressed in CONTAINER units (`cqw`/`cqh` = 1% of the fixed stage, NOT the
-// viewport); `rem`/`px`/`%` already scale with the stage transform. Mobile uses a
-// separate stacked flow and its own `vw`/`rem` sizes (it is not scaled).
+// `container-type: size` and is then `transform: scale()`d as one unit to FILL the
+// window WIDTH (anchored top-left) — so the whole composition keeps its exact
+// proportions at every width and can never overlap or clip. For that to hold, every
+// desktop position/size below is expressed in CONTAINER units (`cqw`/`cqh` = 1% of
+// the fixed stage, NOT the viewport); `rem`/`px`/`%` already scale with the stage
+// transform. Mobile uses a separate stacked flow and its own `vw`/`rem` sizes (it is
+// not scaled).
 
 // --- Screen chrome ----------------------------------------------------------
 // The screen is titled EXPERIENCE (top-left, sitting above the detail card) and
@@ -92,12 +93,12 @@ export const TECH_TITLE_SIZE = 'clamp(2.8rem, 4cqw, 3.4rem)' // bigger (stage un
 export const TECH_TITLE_SKEW = '-7deg' // slight forward tilt
 export const TECH_TITLE_OUTLINE = '1px' // thin black ink stroke traced around the caps (no shadow)
 export const TECH_TITLE_OUTLINE_COLOR = '#0B0D12'
-export const TECH_TITLE_TOP = '45cqh' // below the white card + its shadow
+export const TECH_TITLE_TOP = '40cqh' // below the white card + its shadow (raised so the tech zone clears the 16:9 fold)
 export const TECH_TITLE_LEFT = '2cqw'
 
 // The invisible seeding zone (offsets from the stage; tokens scatter inside it).
 // Starts below the TECH STACK title (TECH_TITLE_TOP) so tokens don't overlap it.
-export const TECHZONE_TOP = '58cqh'
+export const TECHZONE_TOP = '52cqh' // raised with the title so the lowest tokens (TOP+HEIGHT≈82cqh) stay above the 16:9 fold
 export const TECHZONE_LEFT = '3cqw'
 export const TECHZONE_WIDTH = '40cqw'
 export const TECHZONE_HEIGHT = '30cqh'
@@ -117,15 +118,41 @@ export const TECH_SPRING_DAMP = 6 // damping — higher settles with less wobble
 export const TECH_SHAKE_GAIN = 1.2 // deg/s of spin per px of horizontal drag step
 export const TECH_SPIN_MAX = 720 // clamp on angular velocity (deg/s), avoids runaway
 
-// --- Desktop stage (scale-to-fit canvas) ------------------------------------
+// --- Desktop stage (fill-width canvas) ---------------------------------------
 // The desktop collage is authored at this fixed reference size and scaled as one
-// rigid unit to fit the window (the global P3R water fills the surround). All the
-// desktop positions below are `cqw`/`cqh` against this box, so the composition is
-// proportion-locked at every width. Tune REF to match the screen the look was
-// dialled in on so scale ≈ 1 there; MAX_SCALE caps growth on very large displays.
+// rigid unit to FILL THE WINDOW WIDTH, anchored top-left (the global P3R water fills
+// any surround). All the desktop positions below are `cqw`/`cqh` against this box,
+// so the composition is proportion-locked at every width. Tune REF so the look sits
+// right on your screen; MAX_SCALE caps growth on very large displays.
 export const STAGE_REF_W = 1536 // px — reference canvas width
 export const STAGE_REF_H = 960 // px — reference canvas height (16:10)
-export const STAGE_MAX_SCALE = 3 // safety cap only; high so big screens FILL (the canvas grows to use the space, left-anchored) instead of sitting boxed in margins
+export const STAGE_MAX_SCALE = 3 // safety cap on huge displays (stops the collage ballooning)
+// The scale is WIDTH-driven so the whole collage keeps growing with the window (never
+// freezes) and reaches the right edge (no right water band) on every normal landscape
+// screen. This is the one back-stop: the height term `vpH/(STAGE_REF_H·SAFE_FRAC)` only
+// BINDS on extreme-wide / very short viewports (aspect ≳ 1/SAFE_FRAC · 16/10 ≈ 2.0 at
+// 0.80) so an ultrawide doesn't blow the collage off the bottom. Lower it → width wins
+// on even wider aspects (more bottom falls off the fold); raise it → the right band
+// comes back sooner. The bottom band below this fraction holds no critical content.
+export const STAGE_SAFE_FRAC = 0.8
+
+// --- Mobile ↔ desktop switch (the responsive gate) ---------------------------
+// The desktop scale-to-fit collage only shows on wide-enough LANDSCAPE viewports;
+// everything else (phones, portrait/narrow windows, AND tall-ish windows whose aspect
+// is below the stage's 16:10) falls to the mobile stacked flow, so they never get a
+// cramped stage with an empty water band at the bottom. These dials build a CSS @media
+// query at render time (SocialLinkScreen injects a <style> from them — SSR-safe, no
+// hydration flash), so this is the SINGLE place to tune the switch.
+//   • DESKTOP_MIN_WIDTH — below this px width → always mobile (tiny windows read better stacked).
+//   • DESKTOP_MIN_ASPECT_W / _H — the minimum width:height the desktop needs, kept as a
+//     ratio so CSS `min-aspect-ratio` stays exact. The stage is 16:10 (=1.6); a viewport
+//     TALLER than this ratio leaves empty water at the bottom, the more so the lower the
+//     aspect. RAISE the ratio → more tall-ish windows go mobile (but don't cross ~1.54 or
+//     a 16:10 laptop flips to mobile); LOWER it → more windows stay desktop (toward an
+//     empty bottom band). Default 3/2 = 1.5.
+export const DESKTOP_MIN_WIDTH = 900
+export const DESKTOP_MIN_ASPECT_W = 29
+export const DESKTOP_MIN_ASPECT_H = 20
 
 // --- Layout & positions (desktop collage) -----------------------------------
 // Where each block sits on the desktop STAGE and how wide it is. Every block is
@@ -219,10 +246,12 @@ export const BULLETS_TOP = '13cqh'
 export const BULLETS_RIGHT = '3.5cqw'
 export const BULLETS_WIDTH = '46cqw'
 
-// Back-to-menu control (bottom-RIGHT, sharing the logo plate's right edge, sitting
-// below it). Wired like the rest of the site (handoff → main menu).
-export const BACK_BOTTOM = '3cqh'
-export const BACK_RIGHT = '3cqw'
+// Back-to-menu control — pinned to the true bottom-RIGHT corner of the SCREEN. It
+// lives OUTSIDE the scaled stage (see SocialLinkScreen), so these are VIEWPORT units
+// (vh/vw), NOT stage cqw/cqh — that keeps it hugging the real corner at every screen
+// aspect. Wired like the rest of the site (handoff → main menu).
+export const BACK_BOTTOM = '3vh'
+export const BACK_RIGHT = '3vw'
 
 // Vertical experience indicator — a column of pips just RIGHT of the white card,
 // vertically centred on the card and leaned to PARALLEL the card's slanted right
