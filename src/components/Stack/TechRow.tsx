@@ -72,8 +72,12 @@ export function TechRow({
         />
 
         {/* White face — extends past the block to touch the screen edge (negative
-            right margin); padding keeps the text off that edge. */}
+            right margin); padding keeps the text off that edge. Fresh-mounted on
+            every cursor move (rows are keyed by tech), so `stack-cursor-flick`
+            plays as a crisp slide-in; auto-disabled under reduced motion via the
+            [data-stack-cursor] rule in globals.css. */}
         <div
+          data-stack-cursor
           className="relative flex items-center gap-2.5 py-2 pl-5"
           style={{
             marginRight: `calc(-1 * ${SKILL_EDGE_BLEED})`,
@@ -82,6 +86,7 @@ export function TechRow({
             borderTopLeftRadius: SKILL_SELECT_RADIUS,
             borderBottomLeftRadius: SKILL_SELECT_RADIUS,
             color: SKILL_SELECT_TEXT,
+            animation: 'stack-cursor-flick 110ms cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         >
           <span className="min-w-0 flex-1 truncate font-mono text-base font-medium tracking-[0.02em]">

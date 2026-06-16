@@ -114,6 +114,22 @@ body {
   }
 }
 
+/* Stack "Skill" screen cursor flick (TechRow.tsx, Task 04). The focused tech row
+   renders a fresh white face on every cursor move (rows are keyed by tech), so
+   this one-shot slide-in plays on each move — the lit cursor snaps in from its
+   open (left) edge over its red drop-shadow. Quick and graphic, not bouncy.
+   Auto-disabled by the [data-stack-cursor] rule under reduced motion. */
+@keyframes stack-cursor-flick {
+  0% {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Education "Academic Status" slash field (SlashField.tsx). A slow lateral
    drift of the diagonal blue brush-slashes — the P3R "Check Status" shimmer. The
    rotate is carried here too so it overrides the element's static (reduced-
@@ -141,6 +157,11 @@ body {
   /* Freeze the slash-field drift — the slashes stay put (their static transform
      keeps them centred + on the diagonal), mirroring the frozen background. */
   [data-edu-slashes] > * {
+    animation: none !important;
+  }
+  /* Drop the Stack cursor flick — the lit focus row appears instantly. (The Stack
+     dialog wipe is JS-gated in TechDialog, so it needs no rule here.) */
+  [data-stack-cursor] {
     animation: none !important;
   }
   /* Static fallback for the title sweep: freeze the animation, drop the diagonal

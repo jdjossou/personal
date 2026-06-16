@@ -55,7 +55,7 @@ export function CategoryRow({
         tabIndex={selected ? 0 : -1}
         onClick={onSelect}
         onMouseEnter={onSelect}
-        className="relative flex cursor-pointer items-center gap-3 py-2.5 pr-9 pl-[max(1rem,4vw)] focus-visible:outline-none"
+        className="relative flex cursor-pointer items-center gap-3 py-2.5 pr-9 pl-[max(1rem,4vw)] transition-colors duration-100 focus-visible:outline-none"
         style={{
           backgroundColor: selected ? SELECT_FILL : ROW_FILL,
           clipPath: CAT_CLIP,
