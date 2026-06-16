@@ -5,8 +5,9 @@
 // drop-shadow. The selected row is a bright white fill with dark text (the lit
 // party member); the rest are translucent dark-blue with white text.
 //
-// Still static: `selected` is a fixed prop (the default category), no click /
-// keyboard handling — selection + master/detail swapping land in Task 03.
+// Interactive: clicking OR hovering the row selects its category (onSelect),
+// which swaps the right tech list. It's an ARIA listbox option with roving
+// tabindex so keyboard focus tracks the selection.
 
 import {
   CAT_CLIP,
@@ -22,9 +23,11 @@ import type { Category } from './stack'
 export function CategoryRow({
   category,
   selected,
+  onSelect,
 }: {
   category: Category
   selected: boolean
+  onSelect: () => void
 }) {
   return (
     // Selected row sits above its siblings so its red shadow can spill OVER the
@@ -44,9 +47,15 @@ export function CategoryRow({
         />
       )}
 
-      {/* Face — the quadrilateral carrying the icon + label. */}
+      {/* Face — the quadrilateral carrying the icon + label. Click / hover both
+          select the category; roving tabindex keeps it keyboard-reachable. */}
       <div
-        className="relative flex items-center gap-3 py-2.5 pr-9 pl-[max(1rem,4vw)]"
+        role="option"
+        aria-selected={selected}
+        tabIndex={selected ? 0 : -1}
+        onClick={onSelect}
+        onMouseEnter={onSelect}
+        className="relative flex cursor-pointer items-center gap-3 py-2.5 pr-9 pl-[max(1rem,4vw)] focus-visible:outline-none"
         style={{
           backgroundColor: selected ? SELECT_FILL : ROW_FILL,
           clipPath: CAT_CLIP,

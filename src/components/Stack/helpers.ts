@@ -4,16 +4,6 @@
 
 import { CATEGORIES, type Category } from './stack'
 
-// Resolve a category from its stable `id` slug — used by selection and the deep
-// link (`/stack/<category>`). Returns undefined for an unknown slug so callers
-// can fall back to the default selection. Mirrors Education's getTermBySlug.
-export const getCategoryBySlug = (slug: string): Category | undefined =>
-  CATEGORIES.find((category) => category.id === slug)
-
-// The first category in display order — the initial selection when no deep-link
-// slug is present.
+// The first category in display order — the initial roster selection. There are
+// no deep links, so selection is purely in-page state seeded from here.
 export const getDefaultCategory = (): Category => CATEGORIES[0]
-
-// Every category slug, in display order — for generateStaticParams (Task 03).
-export const categorySlugs = (): string[] =>
-  CATEGORIES.map((category) => category.id)

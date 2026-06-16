@@ -9,8 +9,9 @@
 // offset P3R-red drop-shadow, with dark text. If the tech carries links it shows a
 // subtle chevron hinting that activating it opens its references.
 //
-// Still static: `focused` is fixed (the first item) and the chevron is a hint
-// only — the keyboard cursor + the reference dialog land in Task 03.
+// Interactive: hovering moves the cursor to this row (onFocus); clicking focuses
+// it AND activates it (onActivate) to open the reference dialog. The chevron is
+// the affordance for that dialog.
 
 import {
   SKILL_CYAN,
@@ -26,18 +27,36 @@ import type { Technology } from './stack'
 export function TechRow({
   tech,
   focused,
+  onFocus,
+  onActivate,
 }: {
   tech: Technology
   focused: boolean
+  onFocus: () => void
+  onActivate: () => void
 }) {
   const hasLinks = (tech.links?.length ?? 0) > 0
+
+  // Click focuses then activates (so clicking a non-focused row both moves the
+  // cursor there and opens its dialog).
+  function onClick() {
+    onFocus()
+    onActivate()
+  }
 
   if (focused) {
     // Lit row — the white rounded rectangle + offset red drop-shadow, the mirror
     // of a selected CategoryRow. Lifted above siblings so the red can spill OVER
     // the neighbouring row instead of being painted by it.
     return (
-      <div className="relative" style={{ zIndex: 10 }}>
+      <div
+        role="option"
+        aria-selected
+        onMouseEnter={onFocus}
+        onClick={onClick}
+        className="relative cursor-pointer"
+        style={{ zIndex: 10 }}
+      >
         {/* Red drop-shadow — the same rounded shape, offset toward the open side,
             bleeding past the list block to the screen's right edge. */}
         <div
@@ -80,7 +99,14 @@ export function TechRow({
   }
 
   return (
-    <div className="flex items-center gap-2.5 py-1.5" style={{ opacity: 0.78 }}>
+    <div
+      role="option"
+      aria-selected={false}
+      onMouseEnter={onFocus}
+      onClick={onClick}
+      className="flex cursor-pointer items-center gap-2.5 py-1.5"
+      style={{ opacity: 0.78 }}
+    >
       <span
         className="min-w-0 flex-1 truncate font-mono text-base font-medium tracking-[0.02em]"
         style={{

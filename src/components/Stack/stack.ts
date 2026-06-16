@@ -1,7 +1,7 @@
 // Stack "Skill Screen" data — the single source of truth the whole Stack page
-// renders over (the left category roster, the right technology list, the
-// reference-link dialog, and the `/stack/<category>` deep link all read from
-// here). Pure data + the types that describe it: no React, no DOM, no helper
+// renders over (the left category roster, the right technology list, and the
+// reference-link dialog all read from here). Pure data + the types that
+// describe it: no React, no DOM, no helper
 // logic (lookup lives in helpers.ts; tunable look lives in constants.ts). This
 // is the one file you edit to manage the stack.
 //
@@ -32,12 +32,12 @@ export interface TechLink {
 
 export interface Technology {
   name: string // "Spring Boot", "Microsoft Azure AZ-900"
-  links?: TechLink[] // where it was used; 0 / 1 / many (Task 03 dialog handles empty)
+  links?: TechLink[] // where it was used; 0 / 1 / many (the dialog handles empty)
 }
 
 // --- Category --------------------------------------------------------------
 export interface Category {
-  id: string // stable kebab-case deep-link slug ("languages", "spoken-languages")
+  id: string // stable id / React key ("languages", "spoken-languages")
   label: string // display name ("Frameworks & Libraries")
   icon: CategoryIconId // which leading glyph
   items: Technology[]

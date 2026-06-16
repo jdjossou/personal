@@ -9,12 +9,14 @@
 // selected category's name in thick black, and a black-outlined prompt + a wired
 // Back-to-menu control at the bottom-right.
 //
-// Static composition: the default category (getDefaultCategory) is hard-selected
-// and the first technology renders focused. The selection model + master/detail
-// swapping + the reference dialog land in Task 03. Back-to-menu IS wired here
+// Interactive composition (no deep links — selection is pure in-page state): a
+// category is selected (default getDefaultCategory) and exactly one tech in its
+// list is focused (default the first). Clicking / hovering / arrowing the roster
+// swaps the right list; hover + ↑↓/WS move the tech cursor; Enter / click on a
+// tech opens its reference dialog (TechDialog). Back-to-menu IS wired here too
 // (cancel sound → double-circle reveal → route to '/'), the site's shared handoff.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ScreenReveal } from '@/components/Transitions/ScreenReveal'
 import {
@@ -23,14 +25,15 @@ import {
   centerOrigin,
   type Origin,
 } from '@/components/Transitions/handoff'
-import { playSound } from '@/components/MainMenu/audio'
+import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
 import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
 import { TriangleField } from './TriangleField'
 import { StackTitle } from './StackTitle'
 import { CategoryRoster } from './CategoryRoster'
 import { TechList } from './TechList'
+import { TechDialog } from './TechDialog'
 import { KEY_HINTS, STACK_WATER, VIEW_HINT } from './constants'
-import { CATEGORIES } from './stack'
+import { CATEGORIES, type Technology } from './stack'
 import { getDefaultCategory } from './helpers'
 
 // Black outline so white text reads over the bright water (prompt + Back).
@@ -40,34 +43,152 @@ const OUTLINE_SHADOW =
 export function SkillScreen() {
   const router = useRouter()
 
-  // Static selection — the first category in display order. Task 03 makes this
-  // stateful + URL-driven (/stack/<category>).
-  const category = getDefaultCategory()
+  // Selection state (no URL — pure in-page). selectedId picks the category whose
+  // tech list shows on the right; focusIndex is the always-present skill cursor in
+  // that list; dialogTech (non-null) is the activated tech whose reference dialog
+  // is open.
+  const [selectedId, setSelectedId] = useState(getDefaultCategory().id)
+  const [focusIndex, setFocusIndex] = useState(0)
+  const [dialogTech, setDialogTech] = useState<Technology | null>(null)
+
+  const category =
+    CATEGORIES.find((c) => c.id === selectedId) ?? getDefaultCategory()
+  const dialogOpen = dialogTech !== null
+
+  // --- Selection writers (mirror ExperienceList.preview: SFX only on a real
+  // change so hover re-entry / no-ops stay silent) -------------------------------
+
+  // Select a category → swap the right list + reset the cursor to its first item.
+  function selectCategory(id: string) {
+    if (id === selectedId) return
+    playSound('move')
+    setSelectedId(id)
+    setFocusIndex(0)
+  }
+  // Move the skill cursor, wrapping within the current list.
+  function focusTech(i: number) {
+    const n = category.items.length
+    const next = ((i % n) + n) % n
+    if (next === focusIndex) return
+    playSound('move')
+    setFocusIndex(next)
+  }
+  // Open a tech's reference dialog. The tech is passed explicitly (click hands its
+  // own row's tech; keyboard hands the focused one) so we never read a focusIndex
+  // that a same-tick focus change hasn't committed yet.
+  function activateTech(tech: Technology) {
+    playSound('open')
+    setDialogTech(tech)
+  }
+  function closeDialog() {
+    playSound('cancel')
+    setDialogTech(null)
+  }
 
   // Back to the MAIN MENU: play cancel, arm the double-circle reveal the menu will
-  // play, flag page.tsx to open on the menu, then navigate to '/'. Held in a ref so
-  // the window-level Escape listener (bound once) always calls the latest closure.
+  // play, flag page.tsx to open on the menu, then navigate to '/'.
   function back(origin: Origin) {
     playSound('cancel')
     armTransition({ effect: 'doubleCircle', origin, target: 'menu' })
     armEnterMenu()
     router.push('/')
   }
-  const backRef = useRef(back)
+
+  // All key handlers live in a ref so the single window-level listener (bound
+  // once) always reads the latest closure without re-subscribing — same pattern
+  // as ExperienceList's keysRef.
+  const keysRef = useRef({
+    selectCategory,
+    focusTech,
+    activateTech,
+    closeDialog,
+    back,
+    dialogOpen,
+    category,
+    focusIndex,
+  })
   useEffect(() => {
-    backRef.current = back
+    keysRef.current = {
+      selectCategory,
+      focusTech,
+      activateTech,
+      closeDialog,
+      back,
+      dialogOpen,
+      category,
+      focusIndex,
+    }
   })
 
-  // Escape → back to menu, consistent with the rest of the site.
+  // Window-level keys. With the dialog OPEN, only Escape acts (closes it) and the
+  // rest are swallowed so the underlying list doesn't move; the dialog runs its
+  // own Esc/backdrop dismissal too. With it CLOSED: ↑↓/WS move the skill cursor,
+  // ←→ swap category, Home/End jump, Enter/Space activate, Escape backs to menu.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        backRef.current(centerOrigin())
+      const k = keysRef.current
+
+      if (k.dialogOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          k.closeDialog()
+        }
+        return
+      }
+
+      const catIndex = CATEGORIES.findIndex((c) => c.id === k.category.id)
+      switch (e.key) {
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          e.preventDefault()
+          k.focusTech(k.focusIndex + 1)
+          break
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          e.preventDefault()
+          k.focusTech(k.focusIndex - 1)
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          k.selectCategory(CATEGORIES[(catIndex + 1) % CATEGORIES.length].id)
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          k.selectCategory(
+            CATEGORIES[(catIndex - 1 + CATEGORIES.length) % CATEGORIES.length].id,
+          )
+          break
+        case 'Home':
+          e.preventDefault()
+          k.focusTech(0)
+          break
+        case 'End':
+          e.preventDefault()
+          k.focusTech(k.category.items.length - 1)
+          break
+        case 'Enter':
+        case ' ': {
+          const onButton = document.activeElement instanceof HTMLButtonElement
+          if (onButton) break
+          e.preventDefault()
+          k.activateTech(k.category.items[k.focusIndex])
+          break
+        }
+        case 'Escape':
+          e.preventDefault()
+          k.back(centerOrigin())
+          break
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // Unlock the Web Audio context on the first gesture (same as the other screens).
+  useEffect(() => {
+    initAudioOnGesture()
   }, [])
 
   return (
@@ -92,12 +213,21 @@ export function SkillScreen() {
         <div className="relative z-10 hidden h-full w-full md:block">
           {/* Category roster — center-left, rows flush to the left edge. */}
           <div className="absolute top-1/2 left-0 w-[min(34rem,46vw)] -translate-y-1/2">
-            <CategoryRoster categories={CATEGORIES} selectedId={category.id} />
+            <CategoryRoster
+              categories={CATEGORIES}
+              selectedId={category.id}
+              onSelect={selectCategory}
+            />
           </div>
 
           {/* Skill list — top-right. */}
           <div className="absolute top-[8vh] right-[4vw]">
-            <TechList category={category} />
+            <TechList
+              category={category}
+              focusIndex={focusIndex}
+              onFocusTech={focusTech}
+              onActivateTech={activateTech}
+            />
           </div>
 
           {/* Prompt + keyboard indications — bottom-right, black outline. */}
@@ -147,10 +277,19 @@ export function SkillScreen() {
         {/* ---- Mobile: a simple vertical flow of the same regions ---- */}
         <div className="relative z-10 flex h-full w-full flex-col gap-8 overflow-y-auto px-5 pt-[16vh] pb-10 md:hidden">
           <div className="self-end">
-            <TechList category={category} />
+            <TechList
+              category={category}
+              focusIndex={focusIndex}
+              onFocusTech={focusTech}
+              onActivateTech={activateTech}
+            />
           </div>
           <div className="-mx-5">
-            <CategoryRoster categories={CATEGORIES} selectedId={category.id} />
+            <CategoryRoster
+              categories={CATEGORIES}
+              selectedId={category.id}
+              onSelect={selectCategory}
+            />
           </div>
           <div className="mt-auto flex flex-col items-end gap-2">
             <p
@@ -170,6 +309,9 @@ export function SkillScreen() {
           </div>
         </div>
       </main>
+
+      {/* Reference dialog — mounted while a tech is activated. */}
+      {dialogTech && <TechDialog tech={dialogTech} onClose={closeDialog} />}
     </ScreenReveal>
   )
 }

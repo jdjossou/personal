@@ -90,6 +90,19 @@ export const SKILL_SHADOW_OFFSET = 'translate(1px, -6px)'
 // edge — must match SkillScreen's desktop `right-[4vw]` list offset.
 export const SKILL_EDGE_BLEED = '4vw'
 
+// --- Reference dialog -------------------------------------------------------
+// The angular Persona panel opened by activating a focused tech (Enter / click).
+// Lists the tech's reference links (where it was used); no rounded SaaS modal —
+// the panel is a chamfered quadrilateral mirroring the screen's clip language.
+export const DIALOG_BACKDROP = 'rgba(6, 14, 26, 0.72)' // dimming scrim behind the panel
+export const DIALOG_CLIP =
+  'polygon(0 0, calc(100% - 1.1rem) 0, 100% 1.1rem, 100% 100%, 1.1rem 100%, 0 calc(100% - 1.1rem))' // top-right + bottom-left corners cut
+export const DIALOG_PANEL_FILL = '#0A1A2B' // deep navy face, dark Persona chrome
+export const DIALOG_PANEL_TEXT = 'rgba(255, 255, 255, 0.92)'
+export const DIALOG_ACCENT = SHADOW_COLOR // P3R red — header rule + offset shadow
+export const DIALOG_LINK_CYAN = SKILL_CYAN // link labels echo the skill-list cyan
+export const DIALOG_EMPTY = 'No references yet.' // shown when a tech carries no links
+
 // --- Background water -------------------------------------------------------
 // The Stack screen mounts its own instance of the P3R water (over the global
 // bright one), the same move the landing makes. The palette sits HALFWAY between
