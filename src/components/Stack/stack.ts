@@ -32,7 +32,6 @@ export interface TechLink {
 
 export interface Technology {
   name: string // "Spring Boot", "Microsoft Azure AZ-900"
-  note?: string // optional one-line detail (cert issuer / context); name-only by default
   links?: TechLink[] // where it was used; 0 / 1 / many (Task 03 dialog handles empty)
 }
 
@@ -68,7 +67,7 @@ export const CATEGORIES: Category[] = [
           { label: 'AI Research — Local Technologies', url: '/experience/li-ai-researcher-2025' },
         ],
       },
-      { name: 'C++', note: 'Object-oriented systems programming (CS246).' },
+      { name: 'C++' },
       {
         name: 'TypeScript',
         links: [
@@ -178,7 +177,6 @@ export const CATEGORIES: Category[] = [
     items: [
       {
         name: 'Microsoft Azure AZ-900',
-        note: 'Microsoft Certified: Azure Fundamentals.',
         links: [
           {
             label: 'View certification',
@@ -188,7 +186,6 @@ export const CATEGORIES: Category[] = [
       },
       {
         name: 'Microsoft Azure AI-900',
-        note: 'Microsoft Certified: Azure AI Fundamentals.',
         links: [
           {
             label: 'View certification',
@@ -229,8 +226,8 @@ export const CATEGORIES: Category[] = [
     label: 'Spoken languages',
     icon: 'spoken',
     items: [
-      { name: 'English', note: 'Fluent.' },
-      { name: 'French', note: 'Fluent.' },
+      { name: 'English' },
+      { name: 'French' },
     ],
   },
 ]

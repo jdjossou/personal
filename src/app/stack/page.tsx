@@ -1,6 +1,12 @@
-import { SectionPlaceholder } from '@/components/SectionPlaceholder/SectionPlaceholder'
+import { SkillScreen } from '@/components/Stack/SkillScreen'
 
-// Placeholder so the menu's STACK route resolves end-to-end (Task 06).
+// The STACK route renders the P3R "Skill" screen (docs/stack/stack_reference.png):
+// a center-left roster of category quadrilaterals (red drop-shadows, default
+// bright-white selected), a top-right cyan technology list under the category name
+// in thick black, two white triangles + the cropped vertical STACK title over the
+// shared bright water, and a wired Back-to-menu control. The composition is static
+// (default category selected, first tech focused); category selection + swapping +
+// `/stack/<category>` deep links + the reference dialog land in Task 03.
 export default function StackPage() {
-  return <SectionPlaceholder title="Stack" />
+  return <SkillScreen />
 }

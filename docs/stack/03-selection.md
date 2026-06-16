@@ -1,9 +1,7 @@
 # Task 03 — Selection
 
 Make the category roster interactive: selecting a category swaps the right technology
-list. Mirror the master–detail
-+ deep-link grammar already used in `Education/` and `Experience/` so it feels like one
-menu system.
+list.
 
 Builds on the static layout from [`02-skill-screen-layout.md`](02-skill-screen-layout.md)
 and the data/helpers from [`01-data-model-and-content.md`](01-data-model-and-content.md).
