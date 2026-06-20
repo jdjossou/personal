@@ -1,35 +1,33 @@
-// Stack "Skill Screen" data — the single source of truth the whole Stack page
-// renders over (the left category roster, the right technology list, and the
-// reference-link dialog all read from here). Pure data + the types that
-// describe it: no React, no DOM, no helper
-// logic (lookup lives in helpers.ts; tunable look lives in constants.ts). This
-// is the one file you edit to manage the stack.
+// Stack "Skill Screen" data — the shape the Stack page renders over (the left
+// category roster, the right technology list, and the reference-link dialog all
+// read from here). The actual CONTENT is no longer hand-written here: it is
+// DERIVED from the skills registry (src/data/skills.ts) plus the places each
+// skill is used (projects, experience). You never hand-maintain back-links again.
 //
-// Adding a future technology is meant to be a single, obvious append to a
-// category's `items` array (with or without `links`) — no UI code touched. That
-// is the success test for this layer. Adding a whole category is one append to
-// CATEGORIES.
+// To add/change a skill: edit src/data/skills.ts (one entry). To link a skill to
+// a project/experience: just list it in that project's `tags` / role's
+// `technologies` — its back-link appears on /stack automatically.
 //
-// See docs/stack/00-overview.md for the P3R Skill-screen mapping.
+// This file keeps exporting the same types (Category, Technology, TechLink,
+// CategoryIconId) and the same `CATEGORIES` value the UI components import, so no
+// component changes. See docs/stack/00-overview.md for the P3R Skill-screen mapping.
 
-// --- Category icon ---------------------------------------------------------
-// The id of the leading glyph a category renders (the analog of a P3R party
-// member's portrait — no character art). Task 02's CategoryIcon component maps
-// each id to a concrete glyph. Keep this union in sync with CATEGORIES.
-export type CategoryIconId =
-  | 'languages'
-  | 'frameworks'
-  | 'tools'
-  | 'certifications'
-  | 'databases'
-  | 'spoken'
+import { PROJECTS } from '@/components/Projects/projects'
+import { ROLES } from '@/components/Experience/experience'
+import {
+  SKILLS,
+  SKILL_CATEGORIES,
+  type SkillName,
+  type SkillDef,
+  type TechLink,
+  type SkillIconId,
+} from '@/data/skills'
+
+// Re-exported so existing Stack components keep importing these from './stack'.
+export type { TechLink }
+export type CategoryIconId = SkillIconId
 
 // --- Technology ------------------------------------------------------------
-export interface TechLink {
-  label: string // "Intact — Full-Stack", "Farmesh", "View badge"
-  url: string // internal (/experience/<slug>, /projects/<slug>) or external URL
-}
-
 export interface Technology {
   name: string // "Spring Boot", "Microsoft Azure AZ-900"
   links?: TechLink[] // where it was used; 0 / 1 / many (the dialog handles empty)
@@ -37,197 +35,68 @@ export interface Technology {
 
 // --- Category --------------------------------------------------------------
 export interface Category {
-  id: string // stable id / React key ("languages", "spoken-languages")
+  id: string // stable id / React key ("languages", "spoken")
   label: string // display name ("Frameworks & Libraries")
   icon: CategoryIconId // which leading glyph
   items: Technology[]
 }
 
-// Order of the array = display order in the roster (newest/most important first,
-// per goal.md). Content is verbatim from docs/stack/goal.md — no invented
-// technologies. Internal links prefer existing site content; a tech with no
-// match omits `links`.
-export const CATEGORIES: Category[] = [
+// --- Derivation ------------------------------------------------------------
+// One row per place a skill can be "used". Adding a new source (e.g. the future
+// EDUCATION revamp: a `skills` field on TERMS → base '/education') is a single
+// append here — nothing else changes.
+type SkillSource = {
+  base: string // route prefix, e.g. '/projects'
+  items: readonly { slug: string; skills: readonly SkillName[]; label: string }[]
+}
+
+const SOURCES: readonly SkillSource[] = [
   {
-    id: 'languages',
-    label: 'Languages',
-    icon: 'languages',
-    items: [
-      {
-        name: 'Java',
-        links: [
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-          { label: 'Intact — Backend', url: '/experience/intact-backend-2025' },
-        ],
-      },
-      {
-        name: 'Python',
-        links: [
-          { label: 'Agent²', url: '/projects/agent-squared' },
-          { label: 'AI Research — Local Technologies', url: '/experience/li-ai-researcher-2025' },
-        ],
-      },
-      { name: 'C++' },
-      {
-        name: 'TypeScript',
-        links: [
-          { label: 'Farmesh', url: '/projects/farmesh' },
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-        ],
-      },
-      { name: 'JavaScript' },
-      { name: 'Swift' },
-      {
-        name: 'HTML/CSS',
-        links: [{ label: 'Intact — Backend', url: '/experience/intact-backend-2025' }],
-      },
-      {
-        name: 'Dart',
-        links: [{ label: 'Befriend', url: '/projects/befriend' }],
-      },
-    ],
+    base: '/projects',
+    items: PROJECTS.map((p) => ({ slug: p.slug, skills: p.tags, label: p.stackLabel ?? p.name })),
   },
   {
-    id: 'frameworks',
-    label: 'Frameworks & Libraries',
-    icon: 'frameworks',
-    items: [
-      {
-        name: 'Spring Boot',
-        links: [
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-          { label: 'Intact — Backend', url: '/experience/intact-backend-2025' },
-        ],
-      },
-      { name: 'React' },
-      {
-        name: 'Next.js',
-        links: [
-          { label: 'Farmesh', url: '/projects/farmesh' },
-          { label: 'This portfolio', url: '/' },
-        ],
-      },
-      {
-        name: 'Angular',
-        links: [
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-          { label: 'Intact — Backend', url: '/experience/intact-backend-2025' },
-        ],
-      },
-      {
-        name: 'PyTorch',
-        links: [{ label: 'AI Research — Local Technologies', url: '/experience/li-ai-researcher-2025' }],
-      },
-      {
-        name: 'NumPy',
-        links: [{ label: 'AI Research — Local Technologies', url: '/experience/li-ai-researcher-2025' }],
-      },
-      {
-        name: 'FastAPI',
-        links: [{ label: 'Agent²', url: '/projects/agent-squared' }],
-      },
-      {
-        name: 'Flutter',
-        links: [{ label: 'Befriend', url: '/projects/befriend' }],
-      },
-    ],
-  },
-  {
-    id: 'tools',
-    label: 'Tools & Platforms',
-    icon: 'tools',
-    items: [
-      { name: 'Git' },
-      {
-        name: 'Kubernetes',
-        links: [{ label: 'Intact — Backend', url: '/experience/intact-backend-2025' }],
-      },
-      {
-        name: 'Kafka',
-        links: [
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-          { label: 'Intact — Backend', url: '/experience/intact-backend-2025' },
-        ],
-      },
-      {
-        name: 'Jenkins',
-        links: [{ label: 'Intact — Backend', url: '/experience/intact-backend-2025' }],
-      },
-      {
-        name: 'Dynatrace',
-        links: [{ label: 'Intact — Backend', url: '/experience/intact-backend-2025' }],
-      },
-      {
-        name: 'Postman',
-        links: [{ label: 'Intact — Backend', url: '/experience/intact-backend-2025' }],
-      },
-      {
-        name: 'Jira',
-        links: [
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-          { label: 'Intact — Backend', url: '/experience/intact-backend-2025' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'certifications',
-    label: 'Certifications',
-    icon: 'certifications',
-    items: [
-      {
-        name: 'Microsoft Azure AZ-900',
-        links: [
-          {
-            label: 'View certification',
-            url: 'https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/',
-          },
-        ],
-      },
-      {
-        name: 'Microsoft Azure AI-900',
-        links: [
-          {
-            label: 'View certification',
-            url: 'https://learn.microsoft.com/en-us/credentials/certifications/azure-ai-fundamentals/',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'databases',
-    label: 'Databases',
-    icon: 'databases',
-    items: [
-      {
-        name: 'PostgreSQL',
-        links: [{ label: 'Farmesh', url: '/projects/farmesh' }],
-      },
-      {
-        name: 'Oracle SQL',
-        links: [
-          { label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' },
-          { label: 'Intact — Backend', url: '/experience/intact-backend-2025' },
-        ],
-      },
-      {
-        name: 'MongoDB',
-        links: [{ label: 'Intact — Full-Stack', url: '/experience/intact-fullstack-2026' }],
-      },
-      {
-        name: 'Firebase Firestore',
-        links: [{ label: 'Befriend', url: '/projects/befriend' }],
-      },
-    ],
-  },
-  {
-    id: 'spoken-languages',
-    label: 'Spoken languages',
-    icon: 'spoken',
-    items: [
-      { name: 'English' },
-      { name: 'French' },
-    ],
+    base: '/experience',
+    items: ROLES.map((r) => ({ slug: r.slug, skills: r.technologies, label: r.stackLabel ?? r.company })),
   },
 ]
+
+// Index every skill → its derived usage links, scanning the sources in order
+// (projects first, then experience), each source in its own array order.
+function usageLinks(): Map<SkillName, TechLink[]> {
+  const map = new Map<SkillName, TechLink[]>()
+  for (const source of SOURCES) {
+    for (const item of source.items) {
+      const url = `${source.base}/${item.slug}`
+      for (const skill of item.skills) {
+        const list = map.get(skill) ?? []
+        list.push({ label: item.label, url })
+        map.set(skill, list)
+      }
+    }
+  }
+  return map
+}
+
+// Build the roster the UI renders: for each category (in SKILL_CATEGORIES order),
+// the skills assigned to it (in registry insertion order), each carrying its
+// derived usage links followed by any manual registry links (certs, portfolio).
+function buildCategories(): Category[] {
+  const usage = usageLinks()
+  const names = Object.keys(SKILLS) as SkillName[]
+  return SKILL_CATEGORIES.map((cat) => ({
+    id: cat.id,
+    label: cat.label,
+    icon: cat.icon,
+    items: names
+      .filter((name) => (SKILLS[name] as SkillDef).category === cat.id)
+      .map((name) => {
+        const links = [...(usage.get(name) ?? []), ...((SKILLS[name] as SkillDef).links ?? [])]
+        return links.length ? { name, links } : { name }
+      }),
+  }))
+}
+
+// The single value the whole Stack page renders over (kept for the existing
+// helpers.ts and components). Computed once at module load.
+export const CATEGORIES: Category[] = buildCategories()

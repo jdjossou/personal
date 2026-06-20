@@ -7,6 +7,8 @@
 // Adding a future project is meant to be a single, obvious append to PROJECTS
 // below — no UI code touched. That is the success test for this layer.
 
+import type { SkillName } from '@/data/skills'
+
 export type ProjectStatus = 'IN_PROGRESS' | 'DONE'
 
 export type ProjectLink = {
@@ -26,7 +28,13 @@ export type Project = {
   // range (e.g. `2025.03 — `) without needing a sentinel value.
   end?: string
   status: ProjectStatus
-  tags: readonly string[]
+  // Each tag is a key in the skills registry (src/data/skills.ts) — TypeScript
+  // rejects an undeclared/misspelled skill. These drive the row's stack column,
+  // the detail panel, AND (derived) this project's back-links on /stack.
+  tags: readonly SkillName[]
+  // Optional short label used for this project's link in the /stack tech dialog
+  // (defaults to `name`). Use when `name` is long, e.g. "Befriend — …" → "Befriend".
+  stackLabel?: string
   summary: string // one-liner shown in the row / collapsed state
   details?: string // longer body for the expanded detail panel
   links?: readonly ProjectLink[]
@@ -91,6 +99,7 @@ export const PROJECTS: readonly Project[] = [
   {
     slug: 'befriend',
     name: 'Befriend — Your Social Circle',
+    stackLabel: 'Befriend',
     start: '2023-06',
     end: '2024-08',
     status: 'DONE',
@@ -101,7 +110,7 @@ export const PROJECTS: readonly Project[] = [
         newTab: true,
       },
     ],
-    tags: ['Flutter', 'Firebase'],
+    tags: ['Dart', 'Flutter', 'Firebase'],
     summary:
       'Cross-platform social app (100+ downloads), taken solo from design to store deployment.',
     details:

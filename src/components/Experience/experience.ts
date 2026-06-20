@@ -16,6 +16,8 @@
 //   Good bullet: "Rebuilt the billing service around idempotent webhooks, which
 //                 cut failed renewals ~30%."
 
+import type { SkillName } from '@/data/skills'
+
 export type Role = {
   // `slug` is the contract with selection + the deep link (`/experience/<slug>`).
   // URL-safe, stable, unique — changing it breaks any shared link to this role.
@@ -30,7 +32,13 @@ export type Role = {
   // The ★ resume bullets — the left-side job description. See **Voice:** above.
   bullets: readonly string[]
   // The technologies used — rendered as small angular tags in the identity panel.
-  technologies: readonly string[]
+  // Each is a key in the skills registry (src/data/skills.ts) — TypeScript rejects
+  // an undeclared/misspelled skill. Also drives this role's derived back-links on
+  // /stack (any tech with a `category` there).
+  technologies: readonly SkillName[]
+  // Optional short label for this role's link in the /stack tech dialog
+  // (defaults to `company`), e.g. "Intact — Full-Stack".
+  stackLabel?: string
 }
 
 // ⚠️ SCAFFOLD — VERIFY THIS. These entries use the company names called out in
@@ -45,6 +53,7 @@ export const ROLES: readonly Role[] = [
   {
     slug: "intact-fullstack-2026",
     company: "Intact Financial Corporation",
+    stackLabel: "Intact — Full-Stack",
     role: "Software Developer I – Full-Stack",
     location: "Montreal",
     start: "2026-05",
@@ -59,6 +68,7 @@ export const ROLES: readonly Role[] = [
   {
     slug: "intact-backend-2025",
     company: "Intact Financial Corporation",
+    stackLabel: "Intact — Backend",
     role: "Software Developer I – Backend",
     location: "Montreal",
     start: "2025-09",
@@ -69,11 +79,12 @@ export const ROLES: readonly Role[] = [
       "Increased test coverage up to 90% across 3 Spring Boot services using JUnit and Spring Boot Test, reducing regression risk in critical flows.",
       "Led observability efforts by adding service-level metrics and building Dynatrace dashboards for 7 services.",
     ],
-    technologies: ["Java", "Spring Boot", "Kubernetes", "Kafka", "Angular", "Thymeleaf", "JUnit", "Dynatrace", "HTML", "CSS", "Jenkins", "Postman", "Jira", "Oracle SQL"],
+    technologies: ["Java", "Spring Boot", "Kubernetes", "Kafka", "Angular", "Thymeleaf", "JUnit", "Dynatrace", "HTML/CSS", "Jenkins", "Postman", "Jira", "Oracle SQL"],
   },
   {
     slug: "li-ai-researcher-2025",
     company: "Local Technologies Inc.",
+    stackLabel: "AI Research — Local Technologies",
     role: "Student AI Researcher",
     location: "Remote",
     start: "2025-01",
@@ -82,6 +93,6 @@ export const ROLES: readonly Role[] = [
       "Researched recommendation systems and predictive analytics to identify scalable AI solutions for local businesses.",
       "Delivered reports translating AI capabilities into actionable product decisions for non-technical stakeholders.",
     ],
-    technologies: ["AI", "Research", "Recommendation Systems", "Predictive Analytics"],
+    technologies: ["Python", "PyTorch", "NumPy", "AI", "Research", "Recommendation Systems", "Predictive Analytics"],
   },
 ] as const
