@@ -169,12 +169,24 @@ function bakeField(
   return texture
 }
 
+// Baking a 1024×1024 multi-octave field is hundreds of ms of synchronous CPU
+// work (bubbles alone is ~36M sqrt). These fields are deterministic and
+// config-independent, so we bake each ONCE and share the texture across every
+// P3RBackground instance and remount. Without this, every Landing remount (e.g.
+// pressing Esc back from the menu) re-baked all three textures and froze the
+// main thread for seconds. Shared singletons are never disposed — they live for
+// the page lifetime; useP3RBackground must NOT dispose them.
+let patternTextureCache: THREE.DataTexture | null = null
+let caustic2PatternTextureCache: THREE.DataTexture | null = null
+let bubblesTextureCache: THREE.DataTexture | null = null
+
 // Caustic1 pattern_texture — broad, smooth Simplex-style noise, 2 octaves.
 export function bakePatternTexture(): THREE.DataTexture {
-  return bakeField(
+  patternTextureCache ??= bakeField(
     (u, v) => fbmPerlin(u, v, PATTERN_PERIOD, PATTERN_OCTAVES, 1),
     TEXTURE_SIZE
   )
+  return patternTextureCache
 }
 
 // Caustic2 (Layer 5) pattern_texture — very low-frequency Perlin (4 octaves).
@@ -186,16 +198,18 @@ const CAUSTIC2_PERIOD = 2
 const CAUSTIC2_OCTAVES = 4
 
 export function bakeCaustic2PatternTexture(): THREE.DataTexture {
-  return bakeField(
+  caustic2PatternTextureCache ??= bakeField(
     (u, v) => fbmPerlin(u, v, CAUSTIC2_PERIOD, CAUSTIC2_OCTAVES, 42),
     TEXTURE_SIZE
   )
+  return caustic2PatternTextureCache
 }
 
 // Caustic1 bubbles_texture — Voronoi cell-edge noise (F1), 4 octaves.
 export function bakeBubblesTexture(): THREE.DataTexture {
-  return bakeField(
+  bubblesTextureCache ??= bakeField(
     (u, v) => fbmWorley(u, v, BUBBLE_PERIOD, BUBBLE_OCTAVES, 7),
     TEXTURE_SIZE
   )
+  return bubblesTextureCache
 }

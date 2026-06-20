@@ -376,11 +376,11 @@ export function useP3RBackground(
       rtA.dispose()
       rtB.dispose()
       gradient.dispose()
-      patternTexture.dispose()
-      bubblesTexture.dispose()
+      // patternTexture / bubblesTexture / caustic2Pattern are shared module-level
+      // singletons (see noise.ts) reused across instances and remounts — do NOT
+      // dispose them here or the next mount renders broken water.
       bubblesMask.dispose()
       patternMask.dispose()
-      caustic2Pattern.dispose()
       caustic2Mask.dispose()
       renderer.dispose()
     }
