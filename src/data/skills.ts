@@ -80,6 +80,7 @@ export const SKILLS = {
   NumPy: { category: 'frameworks' },
   FastAPI: { category: 'frameworks' },
   Flutter: { category: 'frameworks' },
+  'Tailwind CSS': { category: 'frameworks' },
 
   // --- Tools & Platforms ---------------------------------------------------
   Git: { category: 'tools' },
@@ -130,6 +131,8 @@ export const SKILLS = {
   Telnyx: {},
   Supabase: {},
   Backboard: {},
+  Gemini: {},
+  'Framer Motion': {},
   Thymeleaf: {},
   JUnit: {},
   AI: {},

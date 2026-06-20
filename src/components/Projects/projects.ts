@@ -49,6 +49,38 @@ export type Project = {
 // field — reorder these entries to reorder the quest log.
 export const PROJECTS: readonly Project[] = [
   {
+    slug: 'clashroom',
+    name: 'Clashroom — AI Class Trial Debate Game',
+    stackLabel: 'Clashroom',
+    start: '2026-06',
+    end: '2026-06',
+    status: 'DONE',
+    links: [
+      {
+        label: 'GitHub',
+        href: 'https://github.com/jdjossou/mpchacks2026',
+        newTab: true,
+      },
+      {
+        label: 'Devpost',
+        href: 'https://devpost.com/software/clashroom-temp-name',
+        newTab: true,
+      },
+    ],
+    tags: [
+      'Next.js',
+      'React',
+      'TypeScript',
+      'Tailwind CSS',
+      'Framer Motion',
+      'Gemini',
+    ],
+    summary:
+      'Gamified study tool that turns your notes into a Danganronpa-style class-trial debate, built at MPC Hacks 2026.',
+    details:
+      'Upload a PDF, image, or text file and Google Gemini 2.5 Flash synthesizes it into a structured debate game — a topic, character intros, true/false claims, and matching truth bullets with explanations. Gameplay runs inside a fully CSS-built retro CRT monitor bezel dressed in a Frutiger Aero aesthetic: glossy aqua glass panels, scanlines, vignettes, and an interactive mascot. A 5-phase finite state machine (tutorial → intro → solving → winConclusion → results) drives the round; players fire truth bullets at false statements against a 2-minute clock for an arcade S–D letter grade, then export their parsed session as a portable .clashroom level to share. SSR-safe audio pipeline handles looping soundtracks and overlapping SFX.',
+  },
+  {
     slug: 'agent-squared',
     name: 'Agent²',
     start: '2026-03',
