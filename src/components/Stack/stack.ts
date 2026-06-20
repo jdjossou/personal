@@ -14,6 +14,8 @@
 
 import { PROJECTS } from '@/components/Projects/projects'
 import { ROLES } from '@/components/Experience/experience'
+import { TERMS } from '@/components/Education/education'
+import { formatTermPeriod } from '@/components/Education/helpers'
 import {
   SKILLS,
   SKILL_CATEGORIES,
@@ -58,6 +60,14 @@ const SOURCES: readonly SkillSource[] = [
   {
     base: '/experience',
     items: ROLES.map((r) => ({ slug: r.slug, skills: r.technologies, label: r.stackLabel ?? r.company })),
+  },
+  {
+    base: '/education',
+    items: TERMS.map((t) => ({
+      slug: t.slug,
+      skills: t.skills ?? [],
+      label: `${t.label} · ${formatTermPeriod(t.period)}`,
+    })),
   },
 ]
 

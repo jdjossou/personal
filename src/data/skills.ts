@@ -62,6 +62,11 @@ export const SKILLS = {
   Swift: { category: 'languages' },
   'HTML/CSS': { category: 'languages' },
   Dart: { category: 'languages' },
+  C: { category: 'languages' },
+  Racket: { category: 'languages' },
+  Assembly: { category: 'languages' },
+  MATLAB: { category: 'languages' },
+  R: { category: 'languages' },
 
   // --- Frameworks & Libraries ---------------------------------------------
   'Spring Boot': { category: 'frameworks' },
@@ -115,6 +120,7 @@ export const SKILLS = {
   // --- Spoken languages ----------------------------------------------------
   English: { category: 'spoken' },
   French: { category: 'spoken' },
+  Japanese: { category: 'spoken' },
 
   // --- Uncategorized: valid tags, hidden from /stack -----------------------
   // One-off products/SDKs and soft tags referenced by a project/role but not
@@ -130,6 +136,29 @@ export const SKILLS = {
   Research: {},
   'Recommendation Systems': {},
   'Predictive Analytics': {},
+
+  // --- Coursework skills: valid tags, hidden from /stack -------------------
+  // Foundational/conceptual skills the degree taught (referenced by education
+  // TERMS). Uncategorized so they stay off the /stack roster while still being
+  // valid, typo-checked references that surface on the Education page.
+  OOP: {},
+  'Functional Programming': {},
+  'Discrete Math': {},
+  Probability: {},
+  Statistics: {},
+  Economics: {},
+  'Linear Algebra': {},
+  Logic: {},
+  Communication: {},
+  'Computer Architecture': {},
+  Combinatorics: {},
+  Calculus: {},
+  'Differential Equations': {},
+  'Technical Writing': {},
+  'Data Structures': {},
+  Algorithms: {},
+  'Neural Networks': {},
+  'Cognitive Science': {},
 } as const satisfies Record<string, SkillDef>
 
 // The exact union of every declared skill name — the type projects/experience/

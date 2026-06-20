@@ -14,7 +14,7 @@ import {
   TERM_STATUS_COLOR,
   TERM_STATUS_LABEL,
 } from './constants'
-import { coursesForTerm, formatTermPeriod } from './helpers'
+import { formatTermPeriod } from './helpers'
 import type { Term } from './education'
 
 export function TermRow({
@@ -30,7 +30,6 @@ export function TermRow({
   // Lets StatScreen focus the active row during keyboard navigation.
   rowRef?: (el: HTMLDivElement | null) => void
 }) {
-  const count = coursesForTerm(term).length
   const accent = TERM_STATUS_COLOR[term.status]
 
   return (
@@ -41,7 +40,7 @@ export function TermRow({
       // Roving tabindex — only the active row is in the tab order; arrows move
       // selection within the listbox (StatScreen), focus follows.
       tabIndex={selected ? 0 : -1}
-      aria-label={`Term ${term.label}, year ${term.year}, ${formatTermPeriod(term.period)}, ${TERM_STATUS_LABEL[term.status]}, ${count} ${count === 1 ? 'course' : 'courses'}`}
+      aria-label={`Term ${term.label}, year ${term.year}, ${formatTermPeriod(term.period)}, ${TERM_STATUS_LABEL[term.status]}`}
       data-slug={term.slug}
       onClick={() => onSelect(term.slug)}
       // Active row: a slanted crimson band (BAND_CLIP — flat left edge keeps the
@@ -85,15 +84,8 @@ export function TermRow({
         </span>
       </span>
 
-      {/* Course count + status pip — the figure slot, kept non-numeric-stat. */}
-      <span className="flex items-center gap-2 justify-self-end">
-        <span
-          className={`font-mono text-[0.7rem] tabular-nums whitespace-nowrap ${
-            selected ? 'text-white/90' : 'text-white/55'
-          }`}
-        >
-          {count > 0 ? `${count} crs` : '—'}
-        </span>
+      {/* Status pip — the figure slot, kept non-numeric-stat. */}
+      <span className="flex items-center justify-self-end">
         <span
           aria-hidden
           className="h-2 w-2 shrink-0 rotate-45"

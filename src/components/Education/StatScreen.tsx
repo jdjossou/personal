@@ -17,7 +17,7 @@
 // default term staying the bare `/education`) with popstate sync and cold-load
 // deep links; the menu's UI sounds fire on move/confirm/cancel; Escape and the
 // Back button arm the double-circle reveal back to the main menu; and a lower-
-// menu. The ← / → bumper controls page the selection.
+// menu. Keyboard ← / → page the roster selection.
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -237,11 +237,8 @@ export function StatScreen() {
           <SlashField />
 
           <div className="relative z-10 mx-auto flex min-h-full w-full max-w-6xl flex-col px-[6vw] py-[5vh] md:h-full md:px-12 md:py-[6vh]">
-            {/* Check-Station bumper — LB/RB page the roster selection. */}
-            <CheckStationBar
-              onPrev={() => moveTo(activeIndex - 1)}
-              onNext={() => moveTo(activeIndex + 1)}
-            />
+            {/* Check-Station bumper — the section title (roster paged by keyboard). */}
+            <CheckStationBar />
 
             {/* Two-panel body. Mobile: identity → roster → detail (flex order).
                 Desktop: roster spans the left column; identity (top) + detail

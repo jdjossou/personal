@@ -10,8 +10,8 @@ import type { TermStatus } from './education'
 
 // --- Screen chrome ----------------------------------------------------------
 // Repurposed from P3R's "Check Status" screen: the top bumper reads
-// ACADEMIC STATUS (with ← / → paging the roster), and the bottom "whose stats?"
-// prompt becomes "which term?".
+// ACADEMIC STATUS (the roster is paged by keyboard ← / →), and the bottom
+// "whose stats?" prompt becomes "which term?".
 export const SECTION_TITLE = 'ACADEMIC STATUS'
 export const VIEW_HINT = 'Which term do you want to view?'
 

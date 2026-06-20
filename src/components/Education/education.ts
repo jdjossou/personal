@@ -7,6 +7,8 @@
 // Adding a future course is meant to be a single, obvious append to COURSES
 // below — no UI code touched. That is the success test for this layer.
 
+import type { SkillName } from '@/data/skills'
+
 // --- Profile ---------------------------------------------------------------
 // The fixed header data — the "character" whose abilities the courses are.
 // Exactly one value (PROFILE); it is not a selectable row.
@@ -198,6 +200,11 @@ export type Term = {
   // Term-less courses (e.g. PD, taken on a work term) pinned here explicitly;
   // period-matched courses are added automatically, so list only the extras.
   courseSlugs?: readonly string[]
+  // The skills/technologies this term taught — the page renders THESE (never the
+  // courses). Each must be a declared `SkillName` (src/data/skills.ts), so a typo
+  // is a compile error; stack.ts's '/education' source turns every entry into a
+  // back-link on /stack. Upcoming terms omit it (nothing learned yet).
+  skills?: readonly SkillName[]
 }
 
 export const TERMS: readonly Term[] = [
@@ -205,15 +212,67 @@ export const TERMS: readonly Term[] = [
     slug: 'term-1a',
     label: '1A',
     year: 1,
+    period: '2023-09',
+    status: 'completed',
+    skills: [
+      'Racket',
+      'Functional Programming',
+      'Discrete Math',
+      'Probability',
+      'Economics',
+    ],
+  },
+  {
+    slug: 'term-1b',
+    label: '1B',
+    year: 1,
     period: '2024-01',
     status: 'completed',
-    courseSlugs: ['pd-professional-development'],
+    skills: ['C', 'Functional Programming', 'Git', 'Linear Algebra', 'Japanese'],
   },
-  { slug: 'term-1b', label: '1B', year: 1, period: '2024-09', status: 'completed' },
-  { slug: 'term-2a', label: '2A', year: 2, period: '2025-01', status: 'completed' },
-  { slug: 'term-2b', label: '2B', year: 2, period: '2025-09', status: 'completed' },
-  { slug: 'term-3a', label: '3A', year: 3, period: '2026-01', status: 'completed' },
-  { slug: 'term-3b', label: '3B', year: 3, period: '2026-09', status: 'current' },
+  {
+    slug: 'term-2a',
+    label: '2A',
+    year: 2,
+    period: '2024-09',
+    status: 'completed',
+    skills: ['C++', 'OOP', 'Logic', 'Statistics', 'R', 'Communication', 'Japanese'],
+  },
+  {
+    slug: 'term-2b',
+    label: '2B',
+    year: 2,
+    period: '2025-05',
+    status: 'completed',
+    skills: [
+      'C++',
+      'Assembly',
+      'Computer Architecture',
+      'Combinatorics',
+      'Calculus',
+      'Differential Equations',
+      'Technical Writing',
+    ],
+  },
+  {
+    slug: 'term-3a',
+    label: '3A',
+    year: 3,
+    period: '2026-01',
+    status: 'completed',
+    skills: [
+      'Python',
+      'NumPy',
+      'MATLAB',
+      'PyTorch',
+      'Neural Networks',
+      'AI',
+      'Data Structures',
+      'Algorithms',
+      'Cognitive Science',
+    ],
+  },
+  { slug: 'term-3b', label: '3B', year: 3, period: '2026-09', status: 'upcoming' },
   { slug: 'term-4a', label: '4A', year: 4, period: '2027-09', status: 'upcoming' },
   { slug: 'term-4b', label: '4B', year: 4, period: '2028-01', status: 'upcoming' },
 ] as const

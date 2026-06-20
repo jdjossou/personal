@@ -1,14 +1,12 @@
 // Term detail — the lower-right master/detail readout that swaps as the roster
 // selection changes (the reference's stat readout under the highlighted party
-// row). It presents the selected term's courses as the "abilities / learned
-// skills" the brief calls for: each course is a category badge + code + name +
-// Lv.N + a one-line summary. No GPA, factual only. Empty upcoming terms read a
-// clean "ahead of you" state. Purely presentational — it renders whatever Term
-// it is handed, with no selection state of its own.
+// row). It presents the selected term's learned SKILLS (never the courses): a
+// wrapped field of angular skill tags. Factual only, no grades. Empty upcoming
+// terms read a clean "ahead of you" state. Purely presentational — it renders
+// whatever Term it is handed, with no selection state of its own.
 
-import { CategoryBadge } from './CategoryBadge'
-import { TERM_STATUS_COLOR, TERM_STATUS_LABEL, VIEW_HINT } from './constants'
-import { coursesForTerm, formatTermPeriod, levelFromCode } from './helpers'
+import { TAG_CLIP, TERM_STATUS_COLOR, TERM_STATUS_LABEL, VIEW_HINT } from './constants'
+import { formatTermPeriod } from './helpers'
 import type { Term } from './education'
 
 export function TermDetail({ term }: { term: Term | undefined }) {
@@ -22,7 +20,7 @@ export function TermDetail({ term }: { term: Term | undefined }) {
     )
   }
 
-  const courses = coursesForTerm(term)
+  const skills = term.skills ?? []
   const accent = TERM_STATUS_COLOR[term.status]
 
   return (
@@ -49,40 +47,24 @@ export function TermDetail({ term }: { term: Term | undefined }) {
           </span>
         </header>
 
-        {courses.length === 0 ? (
-          <p className="pt-4 font-mono text-sm tracking-wide text-white/55">
-            Courses to come — this term is still ahead.
-          </p>
-        ) : (
-          <ul className="mt-3 flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
-          {courses.map((course) => {
-            const level = levelFromCode(course)
-            return (
-              <li
-                key={course.slug}
-                className="flex flex-col gap-1 border-l-2 border-white/15 pl-3"
-              >
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <CategoryBadge category={course.category} />
-                  <span className="font-mono text-sm tabular-nums text-white/85">
-                    {course.code}
-                  </span>
-                  <span className="font-display text-xl leading-none tracking-wide text-white uppercase">
-                    {course.name}
-                  </span>
-                  {level !== undefined && (
-                    <span className="font-mono text-xs tabular-nums whitespace-nowrap text-white/55">
-                      Lv.{level}
-                    </span>
-                  )}
-                </div>
-                <p className="max-w-2xl text-sm leading-relaxed text-white/75">
-                  {course.summary}
-                </p>
-              </li>
-            )
-          })}
-          </ul>
+        {skills.length === 0 ? null : (
+          <>
+            <p className="mt-3 flex items-center gap-2 font-mono text-[0.6rem] tracking-[0.3em] text-white/50 uppercase">
+              <span aria-hidden className="h-2 w-2 rotate-45" style={{ backgroundColor: accent }} />
+              Skills Learned
+            </p>
+            <ul className="mt-3 flex min-h-0 flex-wrap content-start gap-2 overflow-y-auto pr-1">
+              {skills.map((skill) => (
+                <li
+                  key={skill}
+                  className="bg-white/[0.08] px-3 py-1.5 font-mono text-sm tracking-wide text-white/90 ring-1 ring-white/15"
+                  style={{ clipPath: TAG_CLIP }}
+                >
+                  {skill}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </section>
