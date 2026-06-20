@@ -30,6 +30,7 @@ import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
 import { TriangleField } from './TriangleField'
 import { StackTitle } from './StackTitle'
 import { CategoryRoster } from './CategoryRoster'
+import { CategoryStrip } from './CategoryStrip'
 import { TechList } from './TechList'
 import { TechDialog } from './TechDialog'
 import { KEY_HINTS, STACK_WATER, VIEW_HINT } from './constants'
@@ -274,38 +275,52 @@ export function SkillScreen() {
           </button>
         </div>
 
-        {/* ---- Mobile: a simple vertical flow of the same regions ---- */}
-        <div className="relative z-10 flex h-full w-full flex-col gap-8 overflow-y-auto px-5 pt-[16vh] pb-10 md:hidden">
-          <div className="self-end">
+        {/* ---- Mobile: a horizontal category bar feeding the tech list below ---- */}
+        <div className="relative z-10 flex h-full w-full flex-col gap-5 pt-[9vh] pb-8 md:hidden">
+          {/* Category selector — horizontal scroll-snap strip of chips. */}
+          <CategoryStrip
+            categories={CATEGORIES}
+            selectedId={category.id}
+            onSelect={selectCategory}
+          />
+
+          {/* Selected category's tech list — big outlined header + rows, fills the
+              rest and scrolls. Full-width so the focused row's white pill can bleed
+              to the screen's right edge (SKILL_EDGE_BLEED), left-padded for the text. */}
+          <div className="min-h-0 flex-1 overflow-y-auto pl-5">
             <TechList
               category={category}
               focusIndex={focusIndex}
               onFocusTech={focusTech}
               onActivateTech={activateTech}
+              fullWidth
+              boxed
             />
           </div>
-          <div className="-mx-5">
-            <CategoryRoster
-              categories={CATEGORIES}
-              selectedId={category.id}
-              onSelect={selectCategory}
+
+          {/* Prompt + Back — compact footer, outlined for legibility. */}
+          <div className="flex flex-col gap-2 px-5">
+            <div
+              aria-hidden
+              className="h-px w-full bg-white/40"
+              style={{ boxShadow: '0 1px 0 rgba(0,0,0,0.4)' }}
             />
-          </div>
-          <div className="mt-auto flex flex-col items-end gap-2">
-            <p
-              className="text-right font-mono text-sm text-white"
-              style={{ textShadow: OUTLINE_SHADOW }}
-            >
-              {VIEW_HINT}
-            </p>
-            <button
-              type="button"
-              onClick={() => back(centerOrigin())}
-              className="font-mono text-xs tracking-[0.3em] text-white uppercase"
-              style={{ textShadow: OUTLINE_SHADOW }}
-            >
-              ← Back to menu
-            </button>
+            <div className="flex items-end justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => back(centerOrigin())}
+                className="font-mono text-xs tracking-[0.3em] text-white uppercase"
+                style={{ textShadow: OUTLINE_SHADOW }}
+              >
+                ← Back
+              </button>
+              <p
+                className="text-right font-mono text-xs text-white/85"
+                style={{ textShadow: OUTLINE_SHADOW }}
+              >
+                {VIEW_HINT}
+              </p>
+            </div>
           </div>
         </div>
       </main>

@@ -21,17 +21,22 @@ import {
   SKILL_SELECT_TEXT,
   SKILL_SHADOW_COLOR,
   SKILL_SHADOW_OFFSET,
+  TECH_BOX_FILL,
+  TECH_BOX_RADIUS,
 } from './constants'
 import type { Technology } from './stack'
 
 export function TechRow({
   tech,
   focused,
+  boxed = false,
   onFocus,
   onActivate,
 }: {
   tech: Technology
   focused: boolean
+  // Mobile: unfocused rows render a solid black rounded background (legibility).
+  boxed?: boolean
   onFocus: () => void
   onActivate: () => void
 }) {
@@ -109,8 +114,16 @@ export function TechRow({
       aria-selected={false}
       onMouseEnter={onFocus}
       onClick={onClick}
-      className="flex cursor-pointer items-center gap-2.5 py-1.5"
-      style={{ opacity: 0.78 }}
+      className={
+        boxed
+          ? 'flex cursor-pointer items-center gap-2.5 px-4 py-2.5'
+          : 'flex cursor-pointer items-center gap-2.5 py-1.5'
+      }
+      style={
+        boxed
+          ? { backgroundColor: TECH_BOX_FILL, borderRadius: TECH_BOX_RADIUS }
+          : { opacity: 0.78 }
+      }
     >
       <span
         className="min-w-0 flex-1 truncate font-mono text-base font-medium tracking-[0.02em]"

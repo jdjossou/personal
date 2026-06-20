@@ -9,7 +9,12 @@
 // activation back up (hover + click). SkillScreen owns the focus index and swaps
 // the handed category as the roster selection changes (master/detail).
 
-import { HEADER_COLOR, SKILL_HEADER_GAP } from './constants'
+import {
+  HEADER_COLOR,
+  HEADER_OUTLINE_COLOR,
+  HEADER_OUTLINE_WIDTH,
+  SKILL_HEADER_GAP,
+} from './constants'
 import { TechRow } from './TechRow'
 import type { Category, Technology } from './stack'
 
@@ -18,19 +23,36 @@ export function TechList({
   focusIndex,
   onFocusTech,
   onActivateTech,
+  fullWidth = false,
+  boxed = false,
 }: {
   category: Category
   focusIndex: number
   onFocusTech: (i: number) => void
   onActivateTech: (tech: Technology) => void
+  // Mobile: stretch to the parent's full width (the strip layout owns the width)
+  // instead of the desktop's fixed right-anchored block.
+  fullWidth?: boolean
+  // Mobile: give unfocused rows a black rounded background (legibility over water).
+  boxed?: boolean
 }) {
   return (
-    <section className="flex w-[18rem] max-w-[80vw] flex-col items-start md:w-[22rem]">
+    <section
+      className={
+        fullWidth
+          ? 'flex w-full flex-col items-start'
+          : 'flex w-[18rem] max-w-[80vw] flex-col items-start md:w-[22rem]'
+      }
+    >
       {/* Header — the category name in thick black, LEFT-aligned with the skill
           list below it (deviates from the reference's right-flush label). */}
       <h2
         className="text-left font-display text-4xl leading-[0.9] font-black tracking-tight uppercase md:text-5xl"
-        style={{ color: HEADER_COLOR }}
+        style={{
+          color: HEADER_COLOR,
+          // Hairline white outline only — no shadow.
+          WebkitTextStroke: `${HEADER_OUTLINE_WIDTH} ${HEADER_OUTLINE_COLOR}`,
+        }}
       >
         {category.label}
       </h2>
@@ -39,7 +61,7 @@ export function TechList({
       <div
         role="listbox"
         aria-label={`${category.label} technologies`}
-        className="flex w-full flex-col items-stretch"
+        className={`flex w-full flex-col items-stretch${boxed ? ' gap-1.5' : ''}`}
         style={{ marginTop: SKILL_HEADER_GAP }}
       >
         {category.items.map((tech, i) => (
@@ -47,6 +69,7 @@ export function TechList({
             key={tech.name}
             tech={tech}
             focused={i === focusIndex}
+            boxed={boxed}
             onFocus={() => onFocusTech(i)}
             onActivate={() => onActivateTech(tech)}
           />

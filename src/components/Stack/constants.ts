@@ -32,7 +32,12 @@ export const KEY_HINTS: readonly { keys: string; label: string }[] = [
 // span's origin (negative values crop it off-screen), ROTATE tilts it (deg).
 export const WORDMARK = SECTION_TITLE
 export const WORDMARK_COLOR = 'rgba(188, 188, 188, 1)'
-export const WORDMARK_SIZE = 'clamp(6rem, 25vw, 25rem)'
+// Pure viewport-relative so the wordmark holds the SAME visual size at every
+// screen size (no fixed-rem caps that shrank the feel on large monitors / inflated
+// it on small ones). It's a vertical title (reads down the left, desktop-only):
+// thickness tracks viewport width, length tracks height — `min()` of both keeps it
+// from overflowing on short/wide windows while feeling equally big everywhere.
+export const WORDMARK_SIZE = 'min(26vw, 42vh)'
 export const WORDMARK_TOP = '-10vh' // vertical origin (CSS top); negative crops off the top
 export const WORDMARK_LEFT = '0.5vw' // horizontal origin (CSS left); negative crops off the left
 export const WORDMARK_ROTATE = '10deg' // extra tilt on top of the vertical stacking
@@ -57,6 +62,11 @@ export const SHADOW_COLOR = '#C81E2C' // P3R red — the offset drop-shadow behi
 export const SHADOW_OFFSET = 'translate(5px, -4px)'
 export const ROW_GAP = '0vh' // vertical gap between roster rows
 
+// Mobile category chip (CategoryStrip): the roster repurposed as a HORIZONTAL
+// scroll of chips. A parallelogram (both side edges slanted the same way) reads
+// P3R-angular running left→right, unlike the vertical row's single-diagonal CAT_CLIP.
+export const CHIP_CLIP = 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)'
+
 // Selected row: bright white fill + dark text (the lit party member). Unselected:
 // SOLID black fill + white text — opaque so the red shadow only peeks at the
 // offset edge (a translucent fill let the red bleed through the whole face).
@@ -69,9 +79,20 @@ export const ROW_FILL = '#0A0A0A'
 // black (so it reads over the bright water without a scrim).
 export const SKILL_CYAN = '#5EE0E6'
 export const HEADER_COLOR = '#0A0A0A'
+// Hairline white outline on the black category header so its edges read crisply
+// over the bright water — a stroke ONLY (no shadow/glow). Keep the width tiny.
+export const HEADER_OUTLINE_WIDTH = '0.5px'
+export const HEADER_OUTLINE_COLOR = 'rgba(255, 255, 255, 0.9)'
 // Vertical gap between the category-name header and the first skill row (e.g.
 // LANGUAGES → JAVA). Applied as the skill-rows block's top margin.
 export const SKILL_HEADER_GAP = '0.2vh'
+
+// Mobile-only: unfocused tech rows get a solid black rounded background so the
+// cyan names stay legible over the water even when they aren't the lit cursor.
+// Desktop keeps them as bare cyan rows per the reference (the boxed look is gated
+// behind TechList's `boxed` prop).
+export const TECH_BOX_FILL = ROW_FILL
+export const TECH_BOX_RADIUS = '8px'
 
 // --- Focused skill row (right-list selection) -------------------------------
 // The mirror of a selected CategoryRow: the focused tech renders as a WHITE

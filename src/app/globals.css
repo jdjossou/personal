@@ -21,9 +21,21 @@
   }
 }
 
-html,
-body {
-  background: transparent;
+html {
+  /* Deep navy backdrop (near the water's depths) rather than transparent: a
+     fallback that guarantees any subpixel gap at a viewport edge — e.g.
+     Safari/Mac flashing a strip when its sidebar reflows the window — reads as
+     dark water, never white.
+
+     This MUST live on <html> (the root) only, never on <body>. The global P3R
+     water <canvas> (layout.tsx) is `z-index:-1`, so in the ROOT stacking context
+     it paints at the negative-z step — which comes BEFORE <body>'s in-flow
+     background box paints. An opaque background on <body> therefore covers the
+     canvas, hiding the water on every page that relies on the global instance
+     (menu / projects / education / experience / stack). The root element's
+     background, by contrast, paints behind the negative-z canvas, so the water
+     shows through while the edge-gap fallback is preserved. */
+  background: #061320;
 }
 
 /* Main menu selector (Task 02). The triangles mount on the selected item, so
