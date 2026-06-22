@@ -1,2 +1,0 @@
-The goal of this project is to build a portfolio website for myself. For this project, I'm inspired by Persona 3 Reload menus.
-The hardest part of this project is to implement the main menu animated background.
