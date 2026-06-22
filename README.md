@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Personal Portfolio
+
+A personal portfolio website with a UI inspired by the menus and visual language of *Persona 3 Reload*. Built with Next.js 16, React 19, and Three.js — featuring an animated water background, a voice-enabled AI assistant, and a layered, game-menu-style navigation.
+
+## Features
+
+- **Persona 3 Reload–inspired UI** — custom main menu, page transitions, and a layered animated water background rendered with Three.js (WebGL).
+- **AI assistant** — a chat assistant (Google Gemini via the Vercel AI SDK) that can answer questions about me, with optional **voice in / voice out**:
+  - Speech-to-text (`/api/stt`)
+  - Text-to-speech using ElevenLabs (`/api/tts`)
+- **Contact form** — sends email through [Resend](https://resend.com) (`/api/contact`).
+- **Rate limiting** — API routes are protected with Upstash Redis + Ratelimit.
+- **Content sections** — About, Experience, Projects, Education, and Tech Stack, each with individual detail pages.
+
+## Tech Stack
+
+| Area | Tooling |
+|------|---------|
+| Framework | Next.js 16 (App Router), React 19 |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| 3D / graphics | Three.js |
+| AI | Vercel AI SDK (`ai`), Google Gemini, ElevenLabs |
+| Email | Resend |
+| Rate limiting | Upstash Redis + Ratelimit |
+| Testing | Playwright |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- An npm-compatible package manager
+
+### Install
+
+```bash
+npm install
+```
+
+### Environment variables
+
+Create a `.env.local` in the project root:
+
+```bash
+# AI assistant (Google Gemini)
+GOOGLE_GENERATIVE_AI_API_KEY=
+
+# Text-to-speech (ElevenLabs)
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
+
+# Contact form (Resend)
+RESEND_API_KEY=
+CONTACT_FROM_EMAIL=
+CONTACT_TO_EMAIL=
+
+# Rate limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
+
+> Features degrade gracefully — e.g. the site renders without AI/email keys, but the assistant and contact form need their respective keys to function.
+
+### Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Run ESLint |
+| `npx playwright test` | Run the Playwright tests |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # App Router routes + API handlers
+│   ├── about/        # About, Experience, Projects, Education, Stack pages
+│   ├── experience/   #   (each with [slug] detail pages)
+│   ├── projects/
+│   ├── education/
+│   ├── stack/
+│   └── api/          # chat, tts, stt, contact route handlers
+├── components/       # UI: P3RBackground, MainMenu, Transitions, sections
+├── data/             # Portfolio content
+└── lib/              # Shared utilities
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Optimized for deployment on [Vercel](https://vercel.com). Add the environment variables above to the project settings, then deploy. The Three.js water background runs client-side (WebGL); no extra build config required.
