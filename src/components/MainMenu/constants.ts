@@ -7,7 +7,7 @@ export const MENU_ITEMS = [
   'EDUCATION',
   'EXPERIENCE',
   'STACK',
-  'ASKME',
+  'ABOUT',
 ] as const
 
 // Navigation target per menu item, indices aligned to MENU_ITEMS. Opening an
@@ -17,7 +17,7 @@ export const MENU_ROUTES = [
   '/education',
   '/experience',
   '/stack',
-  '/askme',
+  '/about',
 ] as const
 
 // --- Selected-item colours -------------------------------------------------
@@ -43,13 +43,13 @@ export type ItemStyle = {
   nudgeX: number // px
 }
 
-// Indices line up with MENU_ITEMS (0 = PROJECTS … 4 = ASKME).
+// Indices line up with MENU_ITEMS (0 = PROJECTS … 4 = ABOUT).
 export const ITEM_STYLES: readonly ItemStyle[] = [
   { angleDeg: -5, blue: '#A8D4F5', z: 5, overlapY: 0, nudgeX: 0 }, // PROJECTS  (front, brightest)
   { angleDeg: 3, blue: '#6FA8D6', z: 2, overlapY: -12, nudgeX: 22 }, // EDUCATION
   { angleDeg: -6, blue: '#95C7EF', z: 4, overlapY: -8, nudgeX: -10 }, // EXPERIENCE
   { angleDeg: 4, blue: '#5E97C8', z: 1, overlapY: -10, nudgeX: 30 }, // STACK     (back, dimmest)
-  { angleDeg: -3, blue: '#7EB8E8', z: 3, overlapY: -12, nudgeX: 8 }, // ASKME
+  { angleDeg: -3, blue: '#7EB8E8', z: 3, overlapY: -12, nudgeX: 8 }, // ABOUT
 ] as const
 
 // The selected item always sits on top of the stack.
@@ -105,7 +105,7 @@ export const shapeClipPath = (): string =>
 // Master toggle, mirroring SHOW_LEFT_PANEL.
 export const SHOW_SYSTEM_PANELS = true
 
-// Per-item content, indices aligned to MENU_ITEMS (0 = PROJECTS … 4 = ASKME).
+// Per-item content, indices aligned to MENU_ITEMS (0 = PROJECTS … 4 = ABOUT).
 export type SectionInfo = {
   index: string // two-digit readout, e.g. '01'
   title: string // "View …" line
@@ -116,7 +116,7 @@ export const SECTION_INFO: readonly SectionInfo[] = [
   { index: '02', title: 'View Education', subtitle: 'Commands' },
   { index: '03', title: 'View Experience', subtitle: 'Commands' },
   { index: '04', title: 'View Stack', subtitle: 'Commands' },
-  { index: '05', title: 'Ask Juniel', subtitle: 'Commands' },
+  { index: '05', title: 'About Juniel', subtitle: 'Commands' },
 ] as const
 
 // The constant label above the number in the index badge.
