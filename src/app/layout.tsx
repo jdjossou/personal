@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Bebas_Neue, Nunito } from "next/font/google";
 import "./globals.css";
 import { P3RBackground } from "@/components/P3RBackground/P3RBackground";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <P3RBackground />
         {children}
+        <Analytics />
       </body>
     </html>
   );
