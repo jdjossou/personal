@@ -26,7 +26,7 @@ import {
   type Origin,
 } from '@/components/Transitions/handoff'
 import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
-import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
+import { resetWaterConfig, setWaterConfig } from '@/components/P3RBackground/waterConfig'
 
 import { IdentityPanel } from './IdentityPanel'
 import { Conversation, type UIChatMessage } from './Conversation'
@@ -135,6 +135,14 @@ export function AboutScreen() {
     return () => window.removeEventListener('keydown', onKey)
   }, [back, contactOpen])
 
+  // Drive the single global water canvas into About's darker variant while this
+  // screen is shown, reverting on leave. No second WebGL context — the hook
+  // re-tunes the live uniforms in place (see waterConfig).
+  useEffect(() => {
+    setWaterConfig(ABOUT_WATER)
+    return () => resetWaterConfig()
+  }, [])
+
   function openContact() {
     playSound('open')
     setContactOpen(true)
@@ -143,9 +151,8 @@ export function AboutScreen() {
   return (
     <ScreenReveal reveals="section">
       <main className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-transparent select-none">
-        {/* About's own darker-blue instance of the P3R water (over the global
-            bright one) — the same move the landing + stack screens make. */}
-        <P3RBackground config={ABOUT_WATER} />
+        {/* The P3R water is the single global canvas (layout.tsx); the effect above
+            drives it into the ABOUT_WATER variant while this screen is mounted. */}
 
         {/* Soft top/bottom darkening for depth + text legibility. */}
         <div

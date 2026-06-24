@@ -11,6 +11,13 @@ export const DPR_CAP = 1.5
 // Godot source's `updates_per_second`. Drives the chunky P3R shimmer.
 export const STEPPED_FPS = 6
 
+// Cap how often the full 8-pass composite redraws. The caustics already step at
+// STEPPED_FPS (6) in-shader; only the Layer-2 distortion warp moves continuously,
+// and it's slow/subtle enough that 30fps sampling reads identically while halving
+// the per-frame GPU work vs an uncapped (~60fps) loop. The render loop still runs
+// on rAF — it just skips draws until this interval has elapsed.
+export const TARGET_FPS = 30
+
 // Layer 1 — base colour. Luminance is now a vertical ramp (bright surface at the
 // top → deep navy at the bottom) that is fed into the 1D blue LUT, with a little
 // FBM noise added for organic depth. midPoint splits the two ramp halves: the

@@ -6,6 +6,7 @@ import {
   CAUSTIC2_PANEL,
   DEFAULT_P3R_CONFIG,
   DPR_CAP,
+  TARGET_FPS,
   type P3RConfig,
 } from './constants'
 import { bakeBubblesMaskTexture, bakeGradientTexture } from './gradient'
@@ -27,12 +28,26 @@ const v2 = (t: readonly [number, number]) => new THREE.Vector2(t[0], t[1])
 const v4 = (t: readonly [number, number, number, number]) =>
   new THREE.Vector4(t[0], t[1], t[2], t[3])
 
+// Minimum gap between water redraws (see TARGET_FPS in constants). Computed once.
+const MIN_FRAME_MS = 1000 / TARGET_FPS
+
+// Exposed by the setup effect so the config-sync effect can re-tune uniforms in
+// place (no WebGL teardown) when the active water config changes.
+type WaterPasses = { applyConfig: (cfg: P3RConfig) => void }
+
 export function useP3RBackground(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   config: P3RConfig = DEFAULT_P3R_CONFIG
 ) {
   const frameIdRef = useRef<number>(0)
+  // Set by the setup effect; called by the config-sync effect below.
+  const passesRef = useRef<WaterPasses | null>(null)
+  // Mount-time config, so the setup effect (keyed on canvasRef only) can build the
+  // initial materials with the right values. Later changes are handled by the
+  // config-sync effect below, so this ref intentionally isn't updated after mount.
+  const configRef = useRef(config)
 
+  // --- Setup: build the renderer + scene once, then run the loop -------------
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -49,7 +64,7 @@ export function useP3RBackground(
       blur: BLUR,
       steppedFps: STEPPED_FPS,
       lightGlow: LIGHT_GLOW,
-    } = config
+    } = configRef.current
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false })
     renderer.setSize(window.innerWidth, window.innerHeight)
@@ -303,8 +318,15 @@ export function useP3RBackground(
       if (reduceMotion.matches) renderScene()
     }
 
+    let lastFrameMs = 0
     function tick() {
       frameIdRef.current = requestAnimationFrame(tick)
+      // Throttle to TARGET_FPS: keep the rAF chain alive but skip the draw until
+      // ~one interval has elapsed. The small tolerance keeps it locked near the
+      // target instead of slipping to half when a tick lands just shy of it.
+      const now = performance.now()
+      if (now - lastFrameMs < MIN_FRAME_MS - 4) return
+      lastFrameMs = now
       timer.update() // advance the Timer; getElapsed() only moves after update()
       setAnimationTime(timer.getElapsed())
       renderScene()
@@ -356,10 +378,61 @@ export function useP3RBackground(
     reduceMotion.addEventListener('change', applyMotionPreference)
     document.addEventListener('visibilitychange', onVisibilityChange)
 
+    // In-place uniform updater for the config-sync effect (landing ↔ menu re-tune
+    // without rebuilding the context or re-baking textures — config only ever
+    // overrides uniform values). Every uniform touched here was created above.
+    function applyConfig(cfg: P3RConfig) {
+      const { baseGradient, tint, distortion, caustic1, caustic2, blur, steppedFps, lightGlow } =
+        cfg
+
+      colorMapMaterial.uniforms.uTopLuma.value = baseGradient.topLuma
+      colorMapMaterial.uniforms.uMidLuma.value = baseGradient.midLuma
+      colorMapMaterial.uniforms.uBottomLuma.value = baseGradient.bottomLuma
+      colorMapMaterial.uniforms.uMidPoint.value = baseGradient.midPoint
+      colorMapMaterial.uniforms.uNoiseAmp.value = baseGradient.noiseAmp
+
+      tintMaterial.uniforms.uTintColor.value.set(tint.color[0], tint.color[1], tint.color[2])
+      tintMaterial.uniforms.uAlphaTop.value = tint.alphaTop
+      tintMaterial.uniforms.uAlphaBottom.value = tint.alphaBottom
+
+      distortionMaterial.uniforms.uAmplitude.value = distortion.amplitude
+      distortionMaterial.uniforms.uSpeed.value = distortion.speed
+      distortionMaterial.uniforms.uWaveLength.value = distortion.waveLength
+
+      const c1 = caustic1Material.uniforms
+      c1.uColor.value.set(caustic1.color[0], caustic1.color[1], caustic1.color[2], caustic1.color[3])
+      c1.uVelocityMain.value.set(caustic1.velocityMain[0], caustic1.velocityMain[1])
+      c1.uVelocitySecond.value.set(caustic1.velocitySecond[0], caustic1.velocitySecond[1])
+      c1.uVelocityBubbles.value.set(caustic1.velocityBubbles[0], caustic1.velocityBubbles[1])
+      c1.uScaleMain.value.set(caustic1.scaleMain[0], caustic1.scaleMain[1])
+      c1.uScaleSecond.value.set(caustic1.scaleSecond[0], caustic1.scaleSecond[1])
+      c1.uScaleBubbles.value.set(caustic1.scaleBubbles[0], caustic1.scaleBubbles[1])
+      c1.uCut.value = caustic1.cut
+      c1.uSteppedFps.value = steppedFps
+
+      const c2 = caustic2Material.uniforms
+      c2.uColor.value.set(caustic2.color[0], caustic2.color[1], caustic2.color[2], caustic2.color[3])
+      c2.uVelocityMain.value.set(caustic2.velocityMain[0], caustic2.velocityMain[1])
+      c2.uVelocitySecond.value.set(caustic2.velocitySecond[0], caustic2.velocitySecond[1])
+      c2.uScaleMain.value.set(caustic2.scaleMain[0], caustic2.scaleMain[1])
+      c2.uScaleSecond.value.set(caustic2.scaleSecond[0], caustic2.scaleSecond[1])
+      c2.uCut.value = caustic2.cut
+      c2.uSteppedFps.value = steppedFps
+
+      blurMaterial.uniforms.uSigma.value = blur.sigma
+      lightGradientMaterial.uniforms.uIntensity.value = lightGlow
+
+      // Reduced motion = loop paused; nothing else redraws, so refresh the frozen
+      // frame to reflect the new tuning immediately.
+      if (reduceMotion.matches && !document.hidden) renderScene()
+    }
+    passesRef.current = { applyConfig }
+
     applyMotionPreference()
 
     return () => {
       stopLoop()
+      passesRef.current = null
       window.removeEventListener('resize', onResize)
       reduceMotion.removeEventListener('change', applyMotionPreference)
       document.removeEventListener('visibilitychange', onVisibilityChange)
@@ -384,5 +457,13 @@ export function useP3RBackground(
       caustic2Mask.dispose()
       renderer.dispose()
     }
-  }, [canvasRef, config])
+  }, [canvasRef])
+
+  // --- Config sync: push tuning changes into the live uniforms in place -------
+  // Keyed on config only; the heavy WebGL setup above is untouched. On mount this
+  // runs right after setup (re-applying the same values is harmless); on a config
+  // change (e.g. the landing screen mounting/unmounting) it re-tunes in place.
+  useEffect(() => {
+    passesRef.current?.applyConfig(config)
+  }, [config])
 }

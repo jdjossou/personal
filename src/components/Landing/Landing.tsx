@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { centerOrigin, originFromEvent, type Origin } from '@/components/Transitions/handoff'
 import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
-import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
+import { resetWaterConfig, setWaterConfig } from '@/components/P3RBackground/waterConfig'
 import { LinkIcon } from './icons'
 import {
   BLOCK_LEFT_VW,
@@ -80,6 +80,15 @@ export function Landing({ onStart }: LandingProps) {
     }
   }, [])
 
+  // Drive the single global water canvas into the landing's darker, calmer variant
+  // while this screen is shown, then revert to the site default on leave (entering
+  // the menu reads as the lights coming up). No second WebGL context — the hook
+  // re-tunes the live uniforms in place.
+  useEffect(() => {
+    setWaterConfig(LANDING_WATER)
+    return () => resetWaterConfig()
+  }, [])
+
   // The single entry path for every activation source. Plays the confirm sound,
   // snaps the prompt, then hands off into the menu (wavyBlot armed by the parent).
   // Reduced motion skips the snap delay — ScreenReveal already gives the simpler
@@ -122,11 +131,9 @@ export function Landing({ onStart }: LandingProps) {
       onClick={(e) => activate(originFromEvent(e))}
       className="fixed inset-0 z-0 cursor-pointer overflow-hidden select-none"
     >
-      {/* Task 02 — the landing's own darker/calmer instance of the P3R water,
-          rendered behind the title text. This sits inside <main> (its own
-          stacking context) so it covers the brighter global water for the landing
-          only; the menu and other pages keep the default look. */}
-      <P3RBackground config={LANDING_WATER} />
+      {/* The P3R water is the single global canvas (layout.tsx); while this screen
+          is mounted the effect above drives it into the LANDING_WATER variant, so
+          it shows through this transparent <main> behind the title text. */}
 
       {/* Single vertically-centred text block: identity cluster + giant prompt
           live in ONE flow column so the name truly sits "over" the prompt — when

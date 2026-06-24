@@ -26,7 +26,7 @@ import {
   type Origin,
 } from '@/components/Transitions/handoff'
 import { initAudioOnGesture, playSound } from '@/components/MainMenu/audio'
-import { P3RBackground } from '@/components/P3RBackground/P3RBackground'
+import { resetWaterConfig, setWaterConfig } from '@/components/P3RBackground/waterConfig'
 import { TriangleField } from './TriangleField'
 import { StackTitle } from './StackTitle'
 import { CategoryRoster } from './CategoryRoster'
@@ -192,12 +192,19 @@ export function SkillScreen() {
     initAudioOnGesture()
   }, [])
 
+  // Drive the single global water canvas into Stack's variant while this screen is
+  // shown, reverting on leave. No second WebGL context — the hook re-tunes the live
+  // uniforms in place (see waterConfig).
+  useEffect(() => {
+    setWaterConfig(STACK_WATER)
+    return () => resetWaterConfig()
+  }, [])
+
   return (
     <ScreenReveal reveals="section">
       <main className="fixed inset-0 z-0 overflow-hidden bg-transparent select-none">
-        {/* Stack's own darker-blue instance of the P3R water (over the global
-            bright one), the same move the landing makes — see STACK_WATER. */}
-        <P3RBackground config={STACK_WATER} />
+        {/* The P3R water is the single global canvas (layout.tsx); the effect above
+            drives it into the STACK_WATER variant while this screen is mounted. */}
 
         {/* Light scrim for extra depth. Contrast comes from the black header +
             black-outlined prompt. */}
